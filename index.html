@@ -1050,26 +1050,92 @@ function getFraudTiers(lang) {
   ];
 }
  
+function analyzeImagePixels(base64) {
+  // Декодируем изображение на canvas и анализируем пиксели
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const size = 40; // маленький размер для скорости
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+ 
+          let totalR = 0, totalG = 0, totalB = 0;
+          let brownPixels = 0, grayPixels = 0, greenPixels = 0, bluePixels = 0;
+          let darkPixels = 0, colorVariance = 0;
+          const pixelCount = size * size;
+ 
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            totalR += r; totalG += g; totalB += b;
+ 
+            const brightness = (r + g + b) / 3;
+            if (brightness < 60) darkPixels++;
+ 
+            // Коричневые/серые тона — признак мусора
+            const maxC = Math.max(r, g, b);
+            const minC = Math.min(r, g, b);
+            const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
+ 
+            if (saturation < 0.25 && brightness > 40 && brightness < 200) grayPixels++;
+            if (r > g && r > b && saturation > 0.15 && saturation < 0.6 && brightness > 40) brownPixels++;
+            if (g > r * 1.1 && g > b * 1.1 && saturation > 0.2) greenPixels++;
+            if (b > r * 1.1 && b > g * 1.05 && saturation > 0.15 && brightness > 100) bluePixels++;
+          }
+ 
+          const avgR = totalR / pixelCount;
+          const avgG = totalG / pixelCount;
+          const avgB = totalB / pixelCount;
+ 
+          // Признаки мусора: много серого/коричневого, низкая яркость в части кадра
+          const trashScore =
+            (grayPixels / pixelCount) * 40 +
+            (brownPixels / pixelCount) * 35 +
+            (darkPixels / pixelCount) * 25;
+ 
+          // Признаки НЕ-мусора: чистое небо (много синего), чистый газон (равномерно зелёный), чистая поверхность
+          const cleanScore =
+            (bluePixels / pixelCount) * 50 +
+            (greenPixels / pixelCount > 0.6 ? 40 : 0) + // однородный газон
+            (Math.abs(avgR - avgG) < 15 && Math.abs(avgG - avgB) < 15 && avgR > 160 ? 35 : 0); // серый асфальт без мусора
+ 
+          resolve({ trashScore, cleanScore, avgR, avgG, avgB,
+            grayPct: grayPixels / pixelCount,
+            brownPct: brownPixels / pixelCount,
+            darkPct: darkPixels / pixelCount,
+            bluePct: bluePixels / pixelCount,
+          });
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = "data:image/jpeg;base64," + base64;
+    } catch {
+      resolve(null);
+    }
+  });
+}
+ 
 function mockAnthropicResponse() {
-  const items = [
-    { category: "пластик", note: "Пластиковые бутылки и пакеты рядом с дорогой" },
-    { category: "смешанный", note: "Смешанный бытовой мусор у контейнера" },
-    { category: "органика", note: "Пищевые отходы на тротуаре" },
-    { category: "стройотходы", note: "Строительный мусор брошен у обочины" },
-    { category: "листва", note: "Куча листвы и веток занимает тротуар" },
-    { category: "смешанный", note: "Мусор рассыпан вокруг переполненного контейнера" },
-    { category: "пластик", note: "Пластиковая упаковка разбросана на газоне" },
+  const trashItems = [
+    { category: "пластик", note: "Пластиковые бутылки и пакеты рядом с дорогой", severity: 3 },
+    { category: "смешанный", note: "Смешанный бытовой мусор у контейнера", severity: 4 },
+    { category: "органика", note: "Пищевые отходы на тротуаре", severity: 3 },
+    { category: "стройотходы", note: "Строительный мусор брошен у обочины", severity: 4 },
+    { category: "листва", note: "Куча листвы и веток занимает тротуар", severity: 2 },
+    { category: "смешанный", note: "Мусор рассыпан вокруг переполненного контейнера", severity: 5 },
+    { category: "пластик", note: "Пластиковая упаковка разбросана на газоне", severity: 3 },
   ];
-  const item = items[Math.floor(Math.random() * items.length)];
-  const severity = 2 + Math.floor(Math.random() * 4);
-  const payload = {
-    is_trash: true,
-    severity,
-    category: item.category,
-    note: item.note,
-    duplicate_of: null,
-  };
-  return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+  const item = trashItems[Math.floor(Math.random() * trashItems.length)];
+  return { content: [{ type: "text", text: JSON.stringify({
+    is_trash: true, severity: item.severity, category: item.category, note: item.note, duplicate_of: null,
+  }) }] };
 }
  
 function mockAnthropicCleanResponse() {
@@ -1079,8 +1145,7 @@ function mockAnthropicCleanResponse() {
     "Мусор убран, поверхность чистая",
   ];
   const note = notes[Math.floor(Math.random() * notes.length)];
-  const payload = { is_clean: true, note };
-  return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+  return { content: [{ type: "text", text: JSON.stringify({ is_clean: true, note }) }] };
 }
  
 function dataUrlToParts(dataUrl) {
@@ -1564,9 +1629,24 @@ function App() {
       } catch (networkErr) {
         clearTimeout(timeoutId);
         if (networkErr.name === "AbortError") throw networkErr;
-        // Сеть/CORS не дали достучаться напрямую до API (нет своего бэкенда с ключом) —
-        // временная заглушка, чтобы поток демо работал, пока не подключен реальный сервер.
-        return mockAnthropicResponse(buildContent(candidatesForCall));
+        // API недоступен напрямую из браузера (CORS/нет бэкенда) —
+        // анализируем пиксели фото сами, чтобы не принимать всё подряд.
+        const primaryPhoto = photosArray[0];
+        const pixelResult = primaryPhoto ? await analyzeImagePixels(primaryPhoto.base64) : null;
+        if (pixelResult) {
+          const { trashScore, cleanScore } = pixelResult;
+          if (cleanScore > trashScore && cleanScore > 20) {
+            // Похоже на чистое место, небо, газон или асфальт без мусора
+            const rejectNotes = [
+              "На фото не видно мусора или отходов в общественном месте",
+              "Место выглядит чистым, мусор не обнаружен",
+              "На снимке нет признаков загрязнения",
+            ];
+            const note = rejectNotes[Math.floor(Math.random() * rejectNotes.length)];
+            return { content: [{ type: "text", text: JSON.stringify({ is_trash: false, severity: 0, category: null, note, duplicate_of: null }) }] };
+          }
+        }
+        return mockAnthropicResponse();
       }
       clearTimeout(timeoutId);
       const json = await resp.json();
@@ -1765,8 +1845,8 @@ function App() {
     : { width: 380, background: "#0c1a14", borderRadius: 40, padding: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" };
  
   const screenBoxStyle = isTelegramApp
-    ? { width: telegramWidthPx, height: tgViewportHeight || undefined, minHeight: tgViewportHeight ? undefined : telegramHeight, background: LIGHTBG, position: "relative", display: "flex", flexDirection: "column", zoom: fontScale }
-    : { width: "100%", height: 740, background: LIGHTBG, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", zoom: fontScale };
+    ? { width: telegramWidthPx, height: tgViewportHeight || undefined, minHeight: tgViewportHeight ? undefined : telegramHeight, background: LIGHTBG, position: "relative", display: "flex", flexDirection: "column" }
+    : { width: "100%", height: 740, background: LIGHTBG, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" };
  
   return (
     <LanguageContext.Provider value={language}>
@@ -1791,7 +1871,7 @@ function App() {
             </div>
           )}
  
-          <div style={{ flex: 1, overflowY: "auto", padding: screen === "splash" ? 0 : "8px 18px 0" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: screen === "splash" ? 0 : "8px 18px 0", fontSize: `${fontScale * 100}%` }}>
             {screen === "splash" && <SplashScreen exiting={splashExiting} />}
             {screen === "language-select" && (
               <LanguageSelectScreen
@@ -2026,7 +2106,7 @@ function LanguageSelectScreen({ onSelect }) {
             onClick={() => onSelect(o.code)}
             style={{
               display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16,
-              border: "1px solid #E3ECE6", background: WHITE, cursor: "pointer", textAlign: "left",
+              border: `1px solid ${CARD}`, background: WHITE, cursor: "pointer", textAlign: "left",
             }}
           >
             <span style={{ fontSize: 22 }}>{o.flag}</span>
@@ -2146,7 +2226,7 @@ function HomeScreen({ points, reports, onSelectPin, pendingCount, isOnline, binF
         <StatCard label={t("activeReports")} value={activeCount} icon={<MapPin size={16} color={FOREST} />} />
       </div>
  
-      <div style={{ marginTop: 10, background: WHITE, border: "1px solid #E3ECE6", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ marginTop: 10, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
         <ProgressRing total={totalCount} cleaned={cleanedCount} />
         <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: TEXTDARK }}>{t("today")}: {totalCount}</p>
@@ -2176,7 +2256,7 @@ function HomeScreen({ points, reports, onSelectPin, pendingCount, isOnline, binF
               aria-label={t("openReportLabel")}
               style={{ position: "absolute", top: r.pos.top, left: r.pos.left, transform: "translate(-50%, -50%)", background: "none", border: "none", padding: 8, cursor: "pointer" }}
             >
-              <div style={{ width: 12, height: 12, borderRadius: 6, background: color, border: "2px solid #FFFFFF", boxShadow: `0 0 0 3px ${r.status === "cleaned" ? "rgba(45,106,79,0.3)" : "rgba(255,183,3,0.3)"}` }} />
+              <div style={{ width: 12, height: 12, borderRadius: 6, background: color, border: `2px solid ${WHITE}`, boxShadow: `0 0 0 3px ${r.status === "cleaned" ? "rgba(45,106,79,0.3)" : "rgba(255,183,3,0.3)"}` }} />
             </button>
           );
         })}
@@ -2424,7 +2504,7 @@ function ReportTimeline({ report, isCleaned }) {
                 width: 14,
                 height: 14,
                 borderRadius: 7,
-                background: s.done ? FOREST2 : "#E3ECE6",
+                background: s.done ? FOREST2 : CARD,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -2433,7 +2513,7 @@ function ReportTimeline({ report, isCleaned }) {
             >
               {s.done && <Check size={9} color="#FFFFFF" />}
             </div>
-            {i < steps.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 18, background: s.done ? FOREST2 : "#E3ECE6" }} />}
+            {i < steps.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 18, background: s.done ? FOREST2 : CARD }} />}
           </div>
           <div style={{ paddingBottom: 14 }}>
             <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: s.done ? TEXTDARK : MUTED }}>{s.label}</p>
@@ -2448,7 +2528,7 @@ function ReportTimeline({ report, isCleaned }) {
 function ReportRow({ report }) {
   const lang = useLang();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: WHITE, borderRadius: 12, padding: 8, border: "1px solid #E3ECE6" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: WHITE, borderRadius: 12, padding: 8, border: `1px solid ${CARD}` }}>
       {report.img ? (
         <img src={report.img} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} />
       ) : (
@@ -2540,13 +2620,13 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
         <div style={{ display: "flex", gap: 4, background: CARD, borderRadius: 9, padding: 3 }}>
           <button
             onClick={() => setMapMode("dots")}
-            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "dots" ? "#FFFFFF" : "transparent", color: mapMode === "dots" ? FOREST : MUTED }}
+            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "dots" ? WHITE : "transparent", color: mapMode === "dots" ? FOREST : MUTED }}
           >
             {t("mapModeDots")}
           </button>
           <button
             onClick={() => setMapMode("heatmap")}
-            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "heatmap" ? "#FFFFFF" : "transparent", color: mapMode === "heatmap" ? FOREST : MUTED }}
+            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "heatmap" ? WHITE : "transparent", color: mapMode === "heatmap" ? FOREST : MUTED }}
           >
             {t("mapModeHeatmap")}
           </button>
@@ -2627,7 +2707,7 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
         {feedEntries.map((f, i) => {
           const Icon = f.icon;
           return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: WHITE, border: "1px solid #E3ECE6", borderRadius: 10, padding: "7px 10px" }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 10, padding: "7px 10px" }}>
               <Icon size={13} color={f.color} style={{ flexShrink: 0 }} />
               <span style={{ flex: 1, fontSize: 10.5, color: TEXTDARK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.text}</span>
               <span style={{ fontSize: 9.5, color: MUTED, flexShrink: 0 }}>{f.time}</span>
@@ -2637,7 +2717,7 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
       </div>
  
       <p style={{ fontSize: 13, fontWeight: 700, color: TEXTDARK, margin: "18px 0 8px" }}>{t("weeklyReportsTitle")}</p>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90, background: WHITE, border: "1px solid #E3ECE6", borderRadius: 12, padding: "10px 10px 6px" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 12, padding: "10px 10px 6px" }}>
         {weekData.map((d, i) => (
           <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
             <span style={{ fontSize: 9, color: MUTED, marginBottom: 2 }}>{d.count}</span>
@@ -2676,7 +2756,7 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
           const fill = binFills[i];
           const st = binStatus(fill, lang);
           return (
-            <div key={bin.id} style={{ display: "flex", alignItems: "center", gap: 10, background: WHITE, border: "1px solid #E3ECE6", borderRadius: 12, padding: 10 }}>
+            <div key={bin.id} style={{ display: "flex", alignItems: "center", gap: 10, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 12, padding: 10 }}>
               <Trash2 size={16} color={st.color} />
               <span style={{ flex: 1, fontSize: 11.5, color: TEXTDARK }}>{binNameLabel(bin.id, lang)}</span>
               <span style={{ fontSize: 11.5, fontWeight: 700, color: st.color }}>{fill}%</span>
@@ -2728,7 +2808,7 @@ function LeaderboardScreen({ reports }) {
           onClick={() => setTab("districts")}
           style={{
             flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
-            background: tab === "districts" ? "#FFFFFF" : "transparent",
+            background: tab === "districts" ? WHITE : "transparent",
             color: tab === "districts" ? FOREST : MUTED,
             fontWeight: 700, fontSize: 12.5,
             boxShadow: tab === "districts" ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
@@ -2740,7 +2820,7 @@ function LeaderboardScreen({ reports }) {
           onClick={() => setTab("cities")}
           style={{
             flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
-            background: tab === "cities" ? "#FFFFFF" : "transparent",
+            background: tab === "cities" ? WHITE : "transparent",
             color: tab === "cities" ? FOREST : MUTED,
             fontWeight: 700, fontSize: 12.5,
             boxShadow: tab === "cities" ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
@@ -2754,13 +2834,13 @@ function LeaderboardScreen({ reports }) {
         <div style={{ display: "flex", gap: 4, background: CARD, borderRadius: 9, padding: 3 }}>
           <button
             onClick={() => setStatMode("ratio")}
-            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "ratio" ? "#FFFFFF" : "transparent", color: statMode === "ratio" ? FOREST : MUTED }}
+            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "ratio" ? WHITE : "transparent", color: statMode === "ratio" ? FOREST : MUTED }}
           >
             {t("statModeRatio")}
           </button>
           <button
             onClick={() => setStatMode("count")}
-            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "count" ? "#FFFFFF" : "transparent", color: statMode === "count" ? FOREST : MUTED }}
+            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "count" ? WHITE : "transparent", color: statMode === "count" ? FOREST : MUTED }}
           >
             {t("statModeCount")}
           </button>
@@ -2775,8 +2855,8 @@ function LeaderboardScreen({ reports }) {
             <div
               key={d.name}
               style={{
-                background: d.isYou ? CARD : "#FFFFFF",
-                border: d.isYou ? `1px solid ${FOREST2}` : "1px solid #E3ECE6",
+                background: d.isYou ? CARD : WHITE,
+                border: d.isYou ? `1px solid ${FOREST2}` : `1px solid ${CARD}`,
                 borderRadius: 14,
                 padding: "10px 14px",
               }}
@@ -2840,7 +2920,7 @@ function computeAchCtx(reports, points) {
 function SettingsScreen({ onBack, language, onSetLanguage, theme, onSetTheme, fontScale, onSetFontScale }) {
   const t = useT();
   return (
-    <div style={{ paddingBottom: 12 }}>
+    <div style={{ paddingBottom: 12, minHeight: "100%", background: LIGHTBG }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
         <button onClick={onBack} aria-label={t("back")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
           <ChevronLeft size={22} color={TEXTDARK} />
@@ -2947,7 +3027,7 @@ function ProfileScreen({ points, reports, onReset, onExport }) {
               title={unlocked ? t(a.titleKey) : t("achLocked")}
               style={{
                 background: unlocked ? CARD : "#F3F5F4",
-                border: unlocked ? `1px solid ${FOREST2}` : "1px solid #E3ECE6",
+                border: unlocked ? `1px solid ${FOREST2}` : `1px solid ${CARD}`,
                 borderRadius: 16,
                 padding: "14px 8px",
                 textAlign: "center",
@@ -2962,7 +3042,7 @@ function ProfileScreen({ points, reports, onReset, onExport }) {
               {prog && (
                 <>
                   <p style={{ margin: "5px 0 2px", fontSize: 9, fontWeight: 700, color: FOREST2 }}>{prog[0]}/{prog[1]}</p>
-                  <div style={{ height: 4, borderRadius: 2, background: "#E3ECE6", overflow: "hidden" }}>
+                  <div style={{ height: 4, borderRadius: 2, background: CARD, overflow: "hidden" }}>
                     <div style={{ width: `${(prog[0] / prog[1]) * 100}%`, height: "100%", background: FOREST2 }} />
                   </div>
                 </>
@@ -3034,7 +3114,7 @@ function CaptureScreen({ photos, onBack, onPickCamera, onRemove, onSubmit, error
                 <button
                   onClick={() => onRemove(i)}
                   aria-label={t("removePhoto")}
-                  style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, background: RED, border: "2px solid #FFFFFF", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, background: RED, border: `2px solid ${WHITE}`, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                 >
                   <X size={12} color="#FFFFFF" />
                 </button>
@@ -3445,7 +3525,6 @@ const secondaryBtnStyle = {
   width: "100%", marginTop: 8, padding: "12px 0", borderRadius: 14, border: "1px solid #D7E5DC",
   background: "transparent", color: MUTED, fontWeight: 600, fontSize: 13, cursor: "pointer",
 };
- 
  
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
