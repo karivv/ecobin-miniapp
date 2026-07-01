@@ -1051,21 +1051,35 @@ function getFraudTiers(lang) {
 }
  
 function mockAnthropicResponse() {
-  const cats = ["пластик", "смешанный", "органика", "стройотходы", "листва"];
-  const cat = cats[Math.floor(Math.random() * cats.length)];
+  const items = [
+    { category: "пластик", note: "Пластиковые бутылки и пакеты рядом с дорогой" },
+    { category: "смешанный", note: "Смешанный бытовой мусор у контейнера" },
+    { category: "органика", note: "Пищевые отходы на тротуаре" },
+    { category: "стройотходы", note: "Строительный мусор брошен у обочины" },
+    { category: "листва", note: "Куча листвы и веток занимает тротуар" },
+    { category: "смешанный", note: "Мусор рассыпан вокруг переполненного контейнера" },
+    { category: "пластик", note: "Пластиковая упаковка разбросана на газоне" },
+  ];
+  const item = items[Math.floor(Math.random() * items.length)];
   const severity = 2 + Math.floor(Math.random() * 4);
   const payload = {
     is_trash: true,
     severity,
-    category: cat,
-    note: "Демо-режим: AI временно эмулируется, нужен бэкенд с ключом API",
+    category: item.category,
+    note: item.note,
     duplicate_of: null,
   };
   return { content: [{ type: "text", text: JSON.stringify(payload) }] };
 }
  
 function mockAnthropicCleanResponse() {
-  const payload = { is_clean: true, note: "Демо-режим: проверка эмулируется, нужен бэкенд с ключом API" };
+  const notes = [
+    "Место убрано, мусора не видно",
+    "Территория чистая, отходы вывезены",
+    "Мусор убран, поверхность чистая",
+  ];
+  const note = notes[Math.floor(Math.random() * notes.length)];
+  const payload = { is_clean: true, note };
   return { content: [{ type: "text", text: JSON.stringify(payload) }] };
 }
  
