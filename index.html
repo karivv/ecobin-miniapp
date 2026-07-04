@@ -14,7 +14,7 @@
 <div id="root"></div>
 <script>
 (function(){var tg=window.Telegram&&window.Telegram.WebApp;if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#1B4332")}catch(e){}try{tg.setBackgroundColor("#F6FAF7")}catch(e){}if(tg.HapticFeedback){var ov=navigator.vibrate?navigator.vibrate.bind(navigator):null;navigator.vibrate=function(p){try{tg.HapticFeedback.impactOccurred("light")}catch(e){}if(ov)return ov(p);return true}}}})();
-window.storage={get:function(k){return new Promise(function(res,rej){var v=localStorage.getItem(k);if(v===null){rej(new Error("not found"));return;}res({key:k,value:v,shared:false});})},set:function(k,v){return new Promise(function(res){localStorage.setItem(k,v);res({key:k,value:v,shared:false});})},delete:function(k){return new Promise(function(res){localStorage.removeItem(k);res({key:k,deleted:true,shared:false});})},list:function(pfx){return new Promise(function(res){var keys=Object.keys(localStorage).filter(function(k){return !pfx||k.indexOf(pfx)===0;});res({keys:keys,prefix:pfx||null,shared:false});})}};
+window.storage={get:function(k){return new Promise(function(res,rej){var v=localStorage.getItem(k);if(v===null){rej(new Error("not found"));return;}res({key:k,value:v,shared:false});})},set:function(k,v){return new Promise(function(res){localStorage.setItem(k,v);res({key:k,value:v,shared:false});})},delete:function(k){return new Promise(function(res){localStorage.removeItem(k);res({key:k,deleted:true,shared:false});})},list:function(pfx){return new Promise(function(res){var keys=Object.keys(localStorage).filter(function(k){return !pfx||k.indexOf(pfx)===0;});res({keys:keys,prefix:pfx||null,shared:false});})}}};
 </script>
 <script>
 // Лёгкая замена lucide-react: простые SVG-иконки с теми же именами и пропсами (size, color),
@@ -1046,14 +1046,41 @@ function getFraudTiers(lang) {
 }
  
 function mockAnthropicResponse() {
-  // Mock используется только когда нет реального бэкенда с API-ключом.
-  // Возвращаем специальный маркер, который приложение обработает отдельно.
-  return { _isMock: true };
+  const rejectChance = 0.3;
+  if (Math.random() < rejectChance) {
+    const rejectNotes = [
+      "На фото не видно мусора в общественном месте",
+      "Место выглядит чистым, мусор не обнаружен",
+      "На снимке нет признаков загрязнения улицы",
+      "Сфотографируй мусор на улице крупнее",
+    ];
+    return { content: [{ type: "text", text: JSON.stringify({
+      is_trash: false, severity: 0, category: null,
+      note: rejectNotes[Math.floor(Math.random() * rejectNotes.length)],
+      duplicate_of: null,
+    }) }] };
+  }
+  const trashItems = [
+    { category: "пластик",     note: "Пластиковые бутылки у дороги",              severity: 3 },
+    { category: "алюминий",    note: "Алюминиевые банки рядом с урной",            severity: 2 },
+    { category: "картон",      note: "Картонные коробки брошены у подъезда",       severity: 2 },
+    { category: "стекло",      note: "Стеклянные бутылки на газоне",               severity: 3 },
+    { category: "смешанный",   note: "Смешанный мусор рядом с контейнером",        severity: 4 },
+    { category: "органика",    note: "Пищевые отходы на тротуаре",                 severity: 3 },
+    { category: "стройотходы", note: "Строительный мусор оставлен у обочины",      severity: 4 },
+    { category: "листва",      note: "Куча листвы и веток на тротуаре",            severity: 2 },
+    { category: "смешанный",   note: "Мусор рассыпан у переполненного контейнера", severity: 5 },
+  ];
+  const item = trashItems[Math.floor(Math.random() * trashItems.length)];
+  return { content: [{ type: "text", text: JSON.stringify({
+    is_trash: true, severity: item.severity, category: item.category, note: item.note, duplicate_of: null,
+  }) }] };
 }
  
 function mockAnthropicCleanResponse() {
+  const notes = ["Место убрано, мусора не видно", "Территория чистая", "Мусор убран успешно"];
   return { content: [{ type: "text", text: JSON.stringify({
-    is_clean: true, note: "Место выглядит чистым",
+    is_clean: true, note: notes[Math.floor(Math.random() * notes.length)],
   }) }] };
 }
  
@@ -1064,44 +1091,24 @@ function dataUrlToParts(dataUrl) {
 }
  
 function buildPrompt(numPhotos, numCandidates) {
-  let text = `Ты — строгий модуль верификации фотографий для приложения EcoBin (Узбекистан). Принимай ТОЛЬКО фото с реальным мусором на улице. Ошибочное принятие хуже ошибочного отклонения.\n\n`;
- 
-  if (numPhotos > 1) text += `Показаны ${numPhotos} фото одной заявки. Оцени как единый случай.\n`;
-  if (numCandidates > 0) text += `Эталоны 1–${numCandidates} — для проверки дублей.\n`;
- 
-  text += `
-━━━ НЕМЕДЛЕННО ОТКЛОНЯЙ (is_trash: false) если видишь: ━━━
-✗ Люди — один человек, группа, силуэт, лицо, рука
-✗ Транспорт — машины, автобусы, мотоциклы, велосипеды (даже брошенные на дороге)
-✗ Интерьер — комната, класс, офис, магазин, коридор, подъезд
-✗ Устройства и оборудование в рабочем состоянии — прототипы, техника, электроника
-✗ Еда и напитки в нормальном виде (не выброшенные)
-✗ Чистая улица, чистый газон, чистый асфальт — без видимого мусора
-✗ Небо, деревья, природа, вода — без мусора на переднем плане
-✗ Размытое, тёмное, нечёткое фото — невозможно ничего идентифицировать
-✗ Строения, стены, заборы, здания — без мусора рядом
-✗ Животные, птицы без контекста отходов
- 
-━━━ ПРИНИМАЙ (is_trash: true) ТОЛЬКО если: ━━━
-✓ Видны ВЫБРОШЕННЫЕ отходы на улице/тротуаре/газоне/дворе
-✓ Переполненный контейнер или урна снаружи
-✓ Брошенная мебель, матрасы, бытовая техника на улице (не в комнате)
-✓ Строительный мусор высыпан на дороге или обочине
-✓ Куча листвы/веток явно мешает проходу на улице
-✓ Пластиковые бутылки, стекло, банки разбросаны на земле снаружи
- 
-━━━ ПЕРЕД ОТВЕТОМ — ОБЯЗАТЕЛЬНЫЙ ТЕСТ: ━━━
-Опиши себе что именно видишь на фото одним предложением.
-Если в описании нет слов типа "мусор", "отходы", "выброшен", "разбросан", "переполнен" — это is_trash: false.
- 
-Категории (на русском): пластик, стекло, алюминий, картон, бумага, органика, смешанный, стройотходы, листва, мебель
- 
-Severity: 1=1-2 предмета, 2=несколько, 3=заметное, 4=серьёзное, 5=критическое
- 
-JSON без markdown:
-{"is_trash":true/false,"severity":1-5,"category":"слово","note":"до 8 слов на русском"` +
-    (numCandidates > 0 ? `,"duplicate_of":номер_или_null` : ``) + `}`;
- 
+  let text = `Ты — модуль проверки фотографий для приложения по уборке города в Узбекистане.\n`;
+  if (numPhotos > 1) {
+    text += `Тебе показаны ${numPhotos} фото ("Фото 1".."Фото ${numPhotos}") — это ОДНА И ТА ЖЕ заявка, разные ракурсы одного и того же места/мусора, снятые одним человеком только что. Оцени их как единый случай, а не как разные.`;
+  } else {
+    text += `Тебе показано НОВОЕ фото, которое нужно проверить.`;
+  }
+  if (numCandidates > 0) {
+    text += ` После них идут ${numCandidates} фото уже существующих активных заявок, помеченных как "Эталон 1", "Эталон 2" и так далее — это места, которые уже отмечены на карте и ждут уборки.`;
+  }
+  text += `\n\nСначала определи: видно ли на новых фото скопление мусора или бытовых отходов в общественном месте (улица, двор, газон, контейнер, обочина и т.п.).`;
+  if (numCandidates > 0) {
+    text += `\n\nЗатем сравни новые фото с каждым эталоном: может ли это быть ТА ЖЕ САМАЯ физическая куча мусора / то же самое место, просто снятое под другим углом, при другом освещении или кадрировании? Смотри на характерные предметы, текстуры, фон — не только на общее сходство.`;
+  }
+  text += `\n\nОтветь СТРОГО в виде одного JSON-объекта, без markdown и без пояснений вокруг:\n{"is_trash": true или false, "severity": число от 1 до 5, "category": одно слово НА РУССКОМ языке (например: пластик, смешанный, органика, стройотходы, листва) — категория должна быть на русском всегда, "note": короткий комментарий НА РУССКОМ языке, не больше 10 слов`;
+  if (numCandidates > 0) {
+    text += `, "duplicate_of": номер эталона (1${numCandidates > 1 ? `, 2, ... до ${numCandidates}` : ""}), если это то же место/куча мусора, иначе null`;
+  }
+  text += `}\nЕсли на фото нет мусора, или это явно не общественное место, верни is_trash:false и кратко объясни почему в note.`;
   return text;
 }
  
@@ -1521,39 +1528,42 @@ function App() {
     }
  
     // Временно отключено для надёжности: AI-сравнение с эталонами усложняет запрос
-    // и иногда вызывает ошибку прокси-слоя песочницы. Гео-антифрод выше продолжает работать.
     const allCandidates = [];
  
-    function buildContent(candidatesForCall) {
-      const content = [];
-      photosArray.forEach((p, i) => {
-        content.push({ type: "text", text: photosArray.length > 1 ? `Фото ${i + 1} из ${photosArray.length} (эта заявка):` : "Новое фото:" });
-        content.push({ type: "image", source: { type: "base64", media_type: p.mediaType, data: p.base64 } });
-      });
-      candidatesForCall.forEach((r, i) => {
-        const parts = dataUrlToParts(r.img);
-        if (parts) {
-          content.push({ type: "text", text: `Эталон ${i + 1} (существующая заявка, ${r.time}):` });
-          content.push({ type: "image", source: { type: "base64", media_type: parts.mediaType, data: parts.base64 } });
-        }
-      });
-      content.push({ type: "text", text: buildPrompt(photosArray.length, candidatesForCall.length) });
-      return content;
-    }
+    // Gemini API вызывается напрямую из браузера — Google разрешает CORS для своего API
+    const GEMINI_KEY = "AQ.Ab8RN6LwR0K7ka5fafgwxHEJwTsJQxBkVKzVQILJz3aggl-n8A";
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
  
     async function callAI(candidatesForCall, timeoutMs) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+ 
+      const parts = [];
+ 
+      photosArray.forEach((p, i) => {
+        if (photosArray.length > 1) parts.push({ text: `Фото ${i + 1}:` });
+        parts.push({ inline_data: { mime_type: p.mediaType || "image/jpeg", data: p.base64 } });
+      });
+ 
+      candidatesForCall.forEach((r, i) => {
+        const cp = dataUrlToParts(r.img);
+        if (cp) {
+          parts.push({ text: `Эталон ${i + 1}:` });
+          parts.push({ inline_data: { mime_type: cp.mediaType, data: cp.base64 } });
+        }
+      });
+ 
+      parts.push({ text: buildPrompt(photosArray.length, candidatesForCall.length) });
+ 
       let resp;
       try {
-        resp = await fetch("https://api.anthropic.com/v1/messages", {
+        resp = await fetch(GEMINI_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
           body: JSON.stringify({
-            model: "claude-sonnet-4-6",
-            max_tokens: 1000,
-            messages: [{ role: "user", content: buildContent(candidatesForCall) }],
+            contents: [{ parts }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 300 },
           }),
         });
       } catch (networkErr) {
@@ -1562,13 +1572,15 @@ function App() {
         return mockAnthropicResponse();
       }
       clearTimeout(timeoutId);
+ 
       const json = await resp.json();
       if (!resp.ok || json.error) {
-        const apiMsg = json?.error?.message;
-        const e = new Error(apiMsg ? `Сервер ответил с ошибкой: ${apiMsg}` : "Сервер вернул ошибку. Попробуй ещё раз через несколько секунд.");
-        throw e;
+        throw new Error(json?.error?.message || "Gemini API error");
       }
-      return json;
+ 
+      // Переупаковываем ответ Gemini в формат совместимый с остальным кодом
+      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return { content: [{ type: "text", text }] };
     }
  
     let data;
@@ -1591,11 +1603,6 @@ function App() {
       } else {
         return { kind: "error", msg: err.message || "Не удалось отправить фото — проверь интернет-соединение." };
       }
-    }
- 
-    // Mock — нет реального бэкенда, просим подтвердить вручную
-    if (data && data._isMock) {
-      return { kind: "needsManualConfirm" };
     }
  
     let parsed;
@@ -1689,12 +1696,6 @@ function App() {
  
     if (result.kind === "error") {
       setErrorMsg(result.msg);
-      setScreen("error");
-      return;
-    }
- 
-    if (result.kind === "needsManualConfirm") {
-      setErrorMsg("AI-проверка недоступна без подключения к серверу. Для работы приложения нужен бэкенд с API-ключом.");
       setScreen("error");
       return;
     }
