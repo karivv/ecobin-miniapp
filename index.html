@@ -1,237 +1,14 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>EcoBin</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<style>
-  html, body { margin: 0; padding: 0; background: #F6FAF7; }
-  #root { min-height: 100vh; }
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script>
-  (function () {
-    var tg = window.Telegram && window.Telegram.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      try { tg.setHeaderColor("#1B4332"); } catch (e) {}
-      try { tg.setBackgroundColor("#F6FAF7"); } catch (e) {}
-      if (tg.HapticFeedback) {
-        var ov = navigator.vibrate ? navigator.vibrate.bind(navigator) : null;
-        navigator.vibrate = function (p) {
-          try { tg.HapticFeedback.impactOccurred("light"); } catch (e) {}
-          if (ov) return ov(p); return true;
-        };
-      }
-    }
-  })();
-  window.storage = {
-    get: function (k) { return new Promise(function (res, rej) { var v = localStorage.getItem(k); if (v === null) { rej(new Error("not found")); return; } res({ key: k, value: v, shared: false }); }); },
-    set: function (k, v) { return new Promise(function (res) { localStorage.setItem(k, v); res({ key: k, value: v, shared: false }); }); },
-    delete: function (k) { return new Promise(function (res) { localStorage.removeItem(k); res({ key: k, deleted: true, shared: false }); }); },
-    list: function (pfx) { return new Promise(function (res) { var keys = Object.keys(localStorage).filter(function (k) { return !pfx || k.indexOf(pfx) === 0; }); res({ keys: keys, prefix: pfx || null, shared: false }); }); },
-  };
-</script>
-<script>
-// Лёгкая замена lucide-react: простые SVG-иконки с теми же именами и пропсами (size, color),
-// чтобы основной код приложения не пришлось переписывать.
-const { createElement: h } = React;
+import React, { useState, useRef, useEffect, createContext, useContext } from "react";
+import { Camera, MapPin, Coins, Check, X, Home, User, Plus, AlertTriangle, Loader2, ChevronLeft, Leaf, Trophy, Trash2, BarChart3, Bot, RotateCcw, Share2, Lock, Award, Shield, Layers, Crown, Target, Wifi, WifiOff, BatteryMedium } from "lucide-react";
  
-function makeIcon(paths) {
-  return function Icon({ size = 24, color = "currentColor", style, ...rest }) {
-    return h(
-      "svg",
-      {
-        width: size,
-        height: size,
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: color,
-        strokeWidth: 2,
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-        style,
-        ...rest,
-      },
-      ...paths
-    );
-  };
-}
- 
-const Camera = makeIcon([
-  h("rect", { key: 1, x: 2, y: 7, width: 20, height: 14, rx: 2 }),
-  h("path", { key: 2, d: "M8 7l2-3h4l2 3" }),
-  h("circle", { key: 3, cx: 12, cy: 14, r: 4 }),
-]);
- 
-const MapPin = makeIcon([
-  h("path", { key: 1, d: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" }),
-  h("circle", { key: 2, cx: 12, cy: 10, r: 3 }),
-]);
- 
-const Coins = makeIcon([
-  h("circle", { key: 1, cx: 9, cy: 9, r: 6 }),
-  h("path", { key: 2, d: "M14.5 9.5a6 6 0 1 0-5 8.4A6 6 0 0 0 19 12" }),
-]);
- 
-const Check = makeIcon([h("polyline", { key: 1, points: "20 6 9 17 4 12" })]);
- 
-const X = makeIcon([
-  h("line", { key: 1, x1: 18, y1: 6, x2: 6, y2: 18 }),
-  h("line", { key: 2, x1: 6, y1: 6, x2: 18, y2: 18 }),
-]);
- 
-const Home = makeIcon([
-  h("path", { key: 1, d: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" }),
-  h("path", { key: 2, d: "M9 22V12h6v10" }),
-]);
- 
-const User = makeIcon([
-  h("circle", { key: 1, cx: 12, cy: 8, r: 4 }),
-  h("path", { key: 2, d: "M4 21c0-4 4-7 8-7s8 3 8 7" }),
-]);
- 
-const Plus = makeIcon([
-  h("line", { key: 1, x1: 12, y1: 5, x2: 12, y2: 19 }),
-  h("line", { key: 2, x1: 5, y1: 12, x2: 19, y2: 12 }),
-]);
- 
-const AlertTriangle = makeIcon([
-  h("path", { key: 1, d: "M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" }),
-  h("line", { key: 2, x1: 12, y1: 9, x2: 12, y2: 13 }),
-  h("line", { key: 3, x1: 12, y1: 17, x2: 12.01, y2: 17 }),
-]);
- 
-const Loader2 = makeIcon([h("path", { key: 1, d: "M21 12a9 9 0 1 1-6.2-8.6" })]);
- 
-const ChevronLeft = makeIcon([h("polyline", { key: 1, points: "15 18 9 12 15 6" })]);
- 
-const Leaf = makeIcon([
-  h("path", { key: 1, d: "M5 21c8 0 14-6 14-14V5h-2C9 5 3 11 3 19v2z" }),
-  h("path", { key: 2, d: "M5 21c4-4 6-8 14-16" }),
-]);
- 
-const Trophy = makeIcon([
-  h("path", { key: 1, d: "M8 4h8v5a4 4 0 0 1-8 0V4z" }),
-  h("path", { key: 2, d: "M5 4h3v3a3 3 0 0 1-3-3z" }),
-  h("path", { key: 3, d: "M19 4h-3v3a3 3 0 0 0 3-3z" }),
-  h("path", { key: 4, d: "M10 13v3h4v-3" }),
-  h("path", { key: 5, d: "M8 20h8" }),
-  h("line", { key: 6, x1: 12, y1: 16, x2: 12, y2: 20 }),
-]);
- 
-const Trash2 = makeIcon([
-  h("path", { key: 1, d: "M3 6h18" }),
-  h("path", { key: 2, d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }),
-  h("path", { key: 3, d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" }),
-  h("line", { key: 4, x1: 10, y1: 11, x2: 10, y2: 17 }),
-  h("line", { key: 5, x1: 14, y1: 11, x2: 14, y2: 17 }),
-]);
- 
-const BarChart3 = makeIcon([
-  h("line", { key: 1, x1: 3, y1: 20, x2: 21, y2: 20 }),
-  h("rect", { key: 2, x: 6, y: 10, width: 3, height: 8 }),
-  h("rect", { key: 3, x: 11, y: 6, width: 3, height: 12 }),
-  h("rect", { key: 4, x: 16, y: 13, width: 3, height: 5 }),
-]);
- 
-const Bot = makeIcon([
-  h("rect", { key: 1, x: 4, y: 8, width: 16, height: 12, rx: 2 }),
-  h("circle", { key: 2, cx: 9, cy: 14, r: 1, fill: "currentColor" }),
-  h("circle", { key: 3, cx: 15, cy: 14, r: 1, fill: "currentColor" }),
-  h("line", { key: 4, x1: 12, y1: 2, x2: 12, y2: 8 }),
-]);
- 
-const RotateCcw = makeIcon([
-  h("path", { key: 1, d: "M3 12a9 9 0 1 0 3-6.7" }),
-  h("polyline", { key: 2, points: "3 4 3 9 8 9" }),
-]);
- 
-const Share2 = makeIcon([
-  h("circle", { key: 1, cx: 18, cy: 5, r: 3 }),
-  h("circle", { key: 2, cx: 6, cy: 12, r: 3 }),
-  h("circle", { key: 3, cx: 18, cy: 19, r: 3 }),
-  h("line", { key: 4, x1: 8.6, y1: 10.5, x2: 15.4, y2: 6.5 }),
-  h("line", { key: 5, x1: 8.6, y1: 13.5, x2: 15.4, y2: 17.5 }),
-]);
- 
-const Lock = makeIcon([
-  h("rect", { key: 1, x: 5, y: 11, width: 14, height: 10, rx: 2 }),
-  h("path", { key: 2, d: "M8 11V7a4 4 0 0 1 8 0v4" }),
-]);
- 
-const Award = makeIcon([
-  h("circle", { key: 1, cx: 12, cy: 8, r: 6 }),
-  h("path", { key: 2, d: "M9 13l-2 7 5-3 5 3-2-7" }),
-]);
- 
-const Shield = makeIcon([h("path", { key: 1, d: "M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" })]);
- 
-const Layers = makeIcon([
-  h("polygon", { key: 1, points: "12 2 2 8 12 14 22 8 12 2" }),
-  h("polyline", { key: 2, points: "2 12 12 18 22 12" }),
-]);
- 
-const Crown = makeIcon([h("path", { key: 1, d: "M3 18h18l-2-9-5 4-2-7-2 7-5-4-2 9z" })]);
- 
-const Target = makeIcon([
-  h("circle", { key: 1, cx: 12, cy: 12, r: 9 }),
-  h("circle", { key: 2, cx: 12, cy: 12, r: 5 }),
-  h("circle", { key: 3, cx: 12, cy: 12, r: 1.5, fill: "currentColor" }),
-]);
- 
-const Wifi = makeIcon([
-  h("path", { key: 1, d: "M2 8.5a16 16 0 0 1 20 0" }),
-  h("path", { key: 2, d: "M5 12a11 11 0 0 1 14 0" }),
-  h("path", { key: 3, d: "M8.5 15.5a6 6 0 0 1 7 0" }),
-  h("circle", { key: 4, cx: 12, cy: 19, r: 1, fill: "currentColor" }),
-]);
- 
-const WifiOff = makeIcon([
-  h("line", { key: 1, x1: 2, y1: 2, x2: 22, y2: 22 }),
-  h("path", { key: 2, d: "M8.5 15.5a6 6 0 0 1 7 0" }),
-  h("path", { key: 3, d: "M5 12a11 11 0 0 1 6.3-3.1" }),
-  h("path", { key: 4, d: "M19 12a11 11 0 0 0-2.8-2.4" }),
-  h("path", { key: 5, d: "M2 8.5a16 16 0 0 1 4.5-2.8" }),
-  h("path", { key: 6, d: "M22 8.5a16 16 0 0 0-4.5-2.8" }),
-  h("circle", { key: 7, cx: 12, cy: 19, r: 1, fill: "currentColor" }),
-]);
- 
-const BatteryMedium = makeIcon([
-  h("rect", { key: 1, x: 2, y: 7, width: 18, height: 10, rx: 2 }),
-  h("line", { key: 2, x1: 22, y1: 11, x2: 22, y2: 13 }),
-  h("rect", { key: 3, x: 5, y: 10, width: 8, height: 4, fill: "currentColor", stroke: "none" }),
-]);
- 
-const Settings = makeIcon([
-  h("circle", { key: 1, cx: 12, cy: 12, r: 3 }),
-  h("path", {
-    key: 2,
-    d: "M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H5a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H11a1.7 1.7 0 0 0 1-1.5V5a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V11a1.7 1.7 0 0 0 1.5 1H19a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
-  }),
-]);
- 
-</script>
-<script type="text/babel" data-presets="react">
-const { useState, useRef, useEffect, createContext, useContext } = React;
- 
- 
-const FOREST = "var(--ecobin-forest, #1B4332)";
-const FOREST2 = "var(--ecobin-forest2, #2D6A4F)";
-const AMBER = "var(--ecobin-amber, #FFB703)";
-const LIGHTBG = "var(--ecobin-lightbg, #F6FAF7)";
-const CARD = "var(--ecobin-card, #EAF4EE)";
-const TEXTDARK = "var(--ecobin-textdark, #16241F)";
-const MUTED = "var(--ecobin-muted, #5C6B66)";
-const RED = "var(--ecobin-red, #C1440E)";
-const WHITE = "var(--ecobin-white, #FFFFFF)";
+const FOREST = "#1B4332";
+const FOREST2 = "#2D6A4F";
+const AMBER = "#FFB703";
+const LIGHTBG = "#F6FAF7";
+const CARD = "#EAF4EE";
+const TEXTDARK = "#16241F";
+const MUTED = "#5C6B66";
+const RED = "#C1440E";
  
 const SEED_REPORTS = [
   { id: "seed-1", category: "пластик", severity: 3, note: "Мусор у тротуара", points: 30, time: "вчера", img: null, status: "pending", pos: { top: "32%", left: "62%" } },
@@ -246,15 +23,21 @@ function useLang() {
 }
  
 const CATEGORY_LABELS = {
-  "пластик": { ru: "пластик", uz: "plastik", en: "plastic" },
-  "смешанный": { ru: "смешанный", uz: "aralash", en: "mixed" },
-  "листва": { ru: "листва", uz: "barglar", en: "leaves" },
-  "органика": { ru: "органика", uz: "organika", en: "organic" },
-  "стройотходы": { ru: "стройотходы", uz: "qurilish chiqindilari", en: "construction waste" },
-  "мусор": { ru: "мусор", uz: "chiqindi", en: "trash" },
-  "повтор": { ru: "повтор", uz: "takror", en: "repeat" },
-  "предупреждение": { ru: "предупреждение", uz: "ogohlantirish", en: "warning" },
-  "та же точка": { ru: "та же точка", uz: "xuddi shu joy", en: "same spot" },
+  "пластик":        { ru: "пластик",        uz: "plastik",               en: "plastic" },
+  "стекло":         { ru: "стекло",          uz: "shisha",                en: "glass" },
+  "алюминий":       { ru: "алюминий",        uz: "alyuminiy",             en: "aluminium" },
+  "картон":         { ru: "картон",          uz: "karton",                en: "cardboard" },
+  "бумага":         { ru: "бумага",          uz: "qog'oz",                en: "paper" },
+  "органика":       { ru: "органика",        uz: "organika",              en: "organic" },
+  "смешанный":      { ru: "смешанный",       uz: "aralash",               en: "mixed" },
+  "стройотходы":    { ru: "стройотходы",     uz: "qurilish chiqindilari", en: "construction waste" },
+  "листва":         { ru: "листва",          uz: "barglar",               en: "leaves" },
+  "электроника":    { ru: "электроника",     uz: "elektronika",           en: "electronics" },
+  "мебель":         { ru: "мебель",          uz: "mebel",                 en: "furniture" },
+  "мусор":          { ru: "мусор",           uz: "chiqindi",              en: "trash" },
+  "повтор":         { ru: "повтор",          uz: "takror",                en: "repeat" },
+  "предупреждение": { ru: "предупреждение",  uz: "ogohlantirish",         en: "warning" },
+  "та же точка":    { ru: "та же точка",     uz: "xuddi shu joy",         en: "same spot" },
 };
 function categoryLabel(cat, lang) {
   const entry = CATEGORY_LABELS[cat];
@@ -298,7 +81,6 @@ const STRINGS = {
     navHome: "Главная",
     navRating: "Рейтинг",
     navProfile: "Профиль",
-    navSettings: "Настройки",
     points: "Баллы",
     activeReports: "Активных заявок",
     cityMap: "Карта города",
@@ -323,13 +105,6 @@ const STRINGS = {
     myReports: "Мои заявки",
     resetDemo: "Сбросить демо-данные",
     language: "Язык",
-    appearanceTitle: "Оформление",
-    themeLight: "Светлая",
-    themeDark: "Тёмная",
-    fontSizeTitle: "Размер шрифта",
-    fontSmall: "Меньше",
-    fontMedium: "Обычный",
-    fontLarge: "Крупнее",
     close: "Закрыть",
     understood: "Понятно",
     tryAgain: "Попробовать снова",
@@ -493,7 +268,6 @@ const STRINGS = {
     navHome: "Bosh sahifa",
     navRating: "Reyting",
     navProfile: "Profil",
-    navSettings: "Sozlamalar",
     points: "Ballar",
     activeReports: "Faol murojaatlar",
     cityMap: "Shahar xaritasi",
@@ -518,13 +292,6 @@ const STRINGS = {
     myReports: "Mening murojaatlarim",
     resetDemo: "Demo ma'lumotlarini tozalash",
     language: "Til",
-    appearanceTitle: "Ko'rinish",
-    themeLight: "Yorug'",
-    themeDark: "Qorong'i",
-    fontSizeTitle: "Shrift hajmi",
-    fontSmall: "Kichik",
-    fontMedium: "Oddiy",
-    fontLarge: "Katta",
     close: "Yopish",
     understood: "Tushunarli",
     tryAgain: "Qayta urinish",
@@ -688,7 +455,6 @@ const STRINGS = {
     navHome: "Home",
     navRating: "Rating",
     navProfile: "Profile",
-    navSettings: "Settings",
     points: "Points",
     activeReports: "Active reports",
     cityMap: "City map",
@@ -713,13 +479,6 @@ const STRINGS = {
     myReports: "My reports",
     resetDemo: "Reset demo data",
     language: "Language",
-    appearanceTitle: "Appearance",
-    themeLight: "Light",
-    themeDark: "Dark",
-    fontSizeTitle: "Font size",
-    fontSmall: "Smaller",
-    fontMedium: "Normal",
-    fontLarge: "Larger",
     close: "Close",
     understood: "Got it",
     tryAgain: "Try again",
@@ -1050,102 +809,23 @@ function getFraudTiers(lang) {
   ];
 }
  
-function analyzeImagePixels(base64) {
-  // Декодируем изображение на canvas и анализируем пиксели
-  return new Promise((resolve) => {
-    try {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          const size = 40; // маленький размер для скорости
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, size, size);
-          const data = ctx.getImageData(0, 0, size, size).data;
- 
-          let totalR = 0, totalG = 0, totalB = 0;
-          let brownPixels = 0, grayPixels = 0, greenPixels = 0, bluePixels = 0;
-          let darkPixels = 0, colorVariance = 0;
-          const pixelCount = size * size;
- 
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i], g = data[i + 1], b = data[i + 2];
-            totalR += r; totalG += g; totalB += b;
- 
-            const brightness = (r + g + b) / 3;
-            if (brightness < 60) darkPixels++;
- 
-            // Коричневые/серые тона — признак мусора
-            const maxC = Math.max(r, g, b);
-            const minC = Math.min(r, g, b);
-            const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
- 
-            if (saturation < 0.25 && brightness > 40 && brightness < 200) grayPixels++;
-            if (r > g && r > b && saturation > 0.15 && saturation < 0.6 && brightness > 40) brownPixels++;
-            if (g > r * 1.1 && g > b * 1.1 && saturation > 0.2) greenPixels++;
-            if (b > r * 1.1 && b > g * 1.05 && saturation > 0.15 && brightness > 100) bluePixels++;
-          }
- 
-          const avgR = totalR / pixelCount;
-          const avgG = totalG / pixelCount;
-          const avgB = totalB / pixelCount;
- 
-          // Признаки мусора: много серого/коричневого, низкая яркость в части кадра
-          const trashScore =
-            (grayPixels / pixelCount) * 40 +
-            (brownPixels / pixelCount) * 35 +
-            (darkPixels / pixelCount) * 25;
- 
-          // Признаки НЕ-мусора: чистое небо (много синего), чистый газон (равномерно зелёный), чистая поверхность
-          const cleanScore =
-            (bluePixels / pixelCount) * 50 +
-            (greenPixels / pixelCount > 0.6 ? 40 : 0) + // однородный газон
-            (Math.abs(avgR - avgG) < 15 && Math.abs(avgG - avgB) < 15 && avgR > 160 ? 35 : 0); // серый асфальт без мусора
- 
-          resolve({ trashScore, cleanScore, avgR, avgG, avgB,
-            grayPct: grayPixels / pixelCount,
-            brownPct: brownPixels / pixelCount,
-            darkPct: darkPixels / pixelCount,
-            bluePct: bluePixels / pixelCount,
-          });
-        } catch {
-          resolve(null);
-        }
-      };
-      img.onerror = () => resolve(null);
-      img.src = "data:image/jpeg;base64," + base64;
-    } catch {
-      resolve(null);
-    }
-  });
-}
- 
 function mockAnthropicResponse() {
-  const trashItems = [
-    { category: "пластик", note: "Пластиковые бутылки и пакеты рядом с дорогой", severity: 3 },
-    { category: "смешанный", note: "Смешанный бытовой мусор у контейнера", severity: 4 },
-    { category: "органика", note: "Пищевые отходы на тротуаре", severity: 3 },
-    { category: "стройотходы", note: "Строительный мусор брошен у обочины", severity: 4 },
-    { category: "листва", note: "Куча листвы и веток занимает тротуар", severity: 2 },
-    { category: "смешанный", note: "Мусор рассыпан вокруг переполненного контейнера", severity: 5 },
-    { category: "пластик", note: "Пластиковая упаковка разбросана на газоне", severity: 3 },
-  ];
-  const item = trashItems[Math.floor(Math.random() * trashItems.length)];
-  return { content: [{ type: "text", text: JSON.stringify({
-    is_trash: true, severity: item.severity, category: item.category, note: item.note, duplicate_of: null,
-  }) }] };
+  const cats = ["пластик", "смешанный", "органика", "стройотходы", "листва"];
+  const cat = cats[Math.floor(Math.random() * cats.length)];
+  const severity = 2 + Math.floor(Math.random() * 4);
+  const payload = {
+    is_trash: true,
+    severity,
+    category: cat,
+    note: "Демо-режим: AI временно эмулируется, нужен бэкенд с ключом API",
+    duplicate_of: null,
+  };
+  return { content: [{ type: "text", text: JSON.stringify(payload) }] };
 }
  
 function mockAnthropicCleanResponse() {
-  const notes = [
-    "Место убрано, мусора не видно",
-    "Территория чистая, отходы вывезены",
-    "Мусор убран, поверхность чистая",
-  ];
-  const note = notes[Math.floor(Math.random() * notes.length)];
-  return { content: [{ type: "text", text: JSON.stringify({ is_clean: true, note }) }] };
+  const payload = { is_clean: true, note: "Демо-режим: проверка эмулируется, нужен бэкенд с ключом API" };
+  return { content: [{ type: "text", text: JSON.stringify(payload) }] };
 }
  
 function dataUrlToParts(dataUrl) {
@@ -1155,28 +835,50 @@ function dataUrlToParts(dataUrl) {
 }
  
 function buildPrompt(numPhotos, numCandidates) {
-  let text = `Ты — модуль проверки фотографий для приложения по уборке города в Узбекистане.\n`;
+  let text = `Ты — модуль проверки фотографий для приложения EcoBin по уборке и переработке отходов в Узбекистане.\n`;
   if (numPhotos > 1) {
-    text += `Тебе показаны ${numPhotos} фото ("Фото 1".."Фото ${numPhotos}") — это ОДНА И ТА ЖЕ заявка, разные ракурсы одного и того же места/мусора, снятые одним человеком только что. Оцени их как единый случай, а не как разные.`;
+    text += `Тебе показаны ${numPhotos} фото ("Фото 1".."Фото ${numPhotos}") — это ОДНА И ТА ЖЕ заявка, разные ракурсы одного места/предмета. Оцени как единый случай.`;
   } else {
-    text += `Тебе показано НОВОЕ фото, которое нужно проверить.`;
+    text += `Тебе показано фото, которое нужно проверить.`;
   }
   if (numCandidates > 0) {
-    text += ` После них идут ${numCandidates} фото уже существующих активных заявок, помеченных как "Эталон 1", "Эталон 2" и так далее — это места, которые уже отмечены на карте и ждут уборки.`;
+    text += ` После идут ${numCandidates} фото уже существующих заявок ("Эталон 1", "Эталон 2" и т.д.).`;
   }
-  text += `\n\nСначала определи: видно ли на новых фото скопление мусора или бытовых отходов в общественном месте (улица, двор, газон, контейнер, обочина и т.п.).`;
+ 
+  text += `\n\nПринимай фото как ВАЛИДНОЕ (is_trash: true) если на нём видно ЛЮБОЕ из следующего:
+— Мусор или отходы в общественном месте (улица, двор, газон, обочина, контейнер)
+— Вторсырьё готовое к сдаче: пластиковые бутылки, алюминиевые банки, картонные коробки, стеклянные бутылки, бумага, упаковка — даже если они аккуратно сложены
+— Переполненный контейнер или урна
+— Брошенные предметы: мебель, техника, строительный мусор на улице
+— Скопление пакетов с мусором
+ 
+ОТКЛОНЯЙ (is_trash: false) только если:
+— Это явно чистое место без мусора (чистая улица, газон, комната)
+— Это личные вещи человека в домашней обстановке (стол с предметами, полка, интерьер без мусора)
+— Это еда, напитки, люди, животные, природа без контекста отходов
+— Фото нечёткое, тёмное, невозможно ничего разобрать`;
+ 
   if (numCandidates > 0) {
-    text += `\n\nЗатем сравни новые фото с каждым эталоном: может ли это быть ТА ЖЕ САМАЯ физическая куча мусора / то же самое место, просто снятое под другим углом, при другом освещении или кадрировании? Смотри на характерные предметы, текстуры, фон — не только на общее сходство.`;
+    text += `\n\nСравни с эталонами: это то же самое место/объект?`;
   }
-  text += `\n\nОтветь СТРОГО в виде одного JSON-объекта, без markdown и без пояснений вокруг:\n{"is_trash": true или false, "severity": число от 1 до 5, "category": одно слово НА РУССКОМ языке (например: пластик, смешанный, органика, стройотходы, листва) — категория должна быть на русском всегда, независимо от языка интерфейса приложения, "note": короткий комментарий НА РУССКОМ языке, не больше 10 слов — тоже всегда на русском`;
+ 
+  text += `\n\nКатегории для поля "category" (одно слово на русском):
+пластик, стекло, алюминий, картон, бумага, органика, смешанный, стройотходы, листва, электроника, мебель
+ 
+Severity 1-5:
+1 — одна бутылка/банка, 2 — несколько предметов, 3 — заметное загрязнение, 4 — серьёзное, 5 — критическое
+ 
+Ответь СТРОГО в виде JSON без markdown:
+{"is_trash": true/false, "severity": 1-5, "category": "слово", "note": "до 10 слов на русском"`;
+ 
   if (numCandidates > 0) {
-    text += `, "duplicate_of": номер эталона (1${numCandidates > 1 ? `, 2, ... до ${numCandidates}` : ""}), если это то же место/куча мусора, иначе null`;
+    text += `, "duplicate_of": номер_эталона_или_null`;
   }
-  text += `}\nЕсли на фото нет мусора, или это явно не общественное место, верни is_trash:false и кратко объясни почему в note.`;
+  text += `}`;
   return text;
 }
  
-function App() {
+export default function App() {
   const [screen, setScreen] = useState("splash");
   const [points, setPoints] = useState(40);
   const [reports, setReports] = useState(SEED_REPORTS);
@@ -1209,8 +911,6 @@ function App() {
   const [debugSim, setDebugSim] = useState(null);
   const [splashExiting, setSplashExiting] = useState(false);
   const [language, setLanguage] = useState("ru");
-  const [theme, setTheme] = useState("light");
-  const [fontScale, setFontScale] = useState(1);
   const cameraInputRef = useRef(null);
   const afterInputRef = useRef(null);
   const idCounter = useRef(1);
@@ -1295,14 +995,6 @@ function App() {
         const l = await window.storage.get("ecobin_language", false);
         if (l && l.value) setLanguage(l.value);
       } catch {}
-      try {
-        const th = await window.storage.get("ecobin_theme", false);
-        if (th && th.value) setTheme(th.value);
-      } catch {}
-      try {
-        const fs = await window.storage.get("ecobin_font_scale", false);
-        if (fs && fs.value) setFontScale(parseFloat(fs.value));
-      } catch {}
       setLoaded(true);
     })();
   }, []);
@@ -1326,35 +1018,6 @@ function App() {
     if (!loaded) return;
     window.storage.set("ecobin_language", language, false).catch(() => {});
   }, [language, loaded]);
- 
-  useEffect(() => {
-    if (!loaded) return;
-    window.storage.set("ecobin_theme", theme, false).catch(() => {});
-  }, [theme, loaded]);
- 
-  useEffect(() => {
-    if (!loaded) return;
-    window.storage.set("ecobin_font_scale", String(fontScale), false).catch(() => {});
-  }, [fontScale, loaded]);
- 
-  const [tgViewportHeight, setTgViewportHeight] = useState(null);
-  const [tgViewportWidth, setTgViewportWidth] = useState(typeof window !== "undefined" ? window.innerWidth : null);
- 
-  useEffect(() => {
-    const tg = typeof window !== "undefined" && window.Telegram && window.Telegram.WebApp;
-    if (!tg) return;
-    function update() {
-      if (tg.viewportHeight) setTgViewportHeight(tg.viewportHeight);
-      setTgViewportWidth(window.innerWidth);
-    }
-    update();
-    tg.onEvent && tg.onEvent("viewportChanged", update);
-    window.addEventListener("resize", update);
-    return () => {
-      tg.offEvent && tg.offEvent("viewportChanged", update);
-      window.removeEventListener("resize", update);
-    };
-  }, []);
  
   function openCapture() {
     setPhotos([]);
@@ -1629,24 +1292,9 @@ function App() {
       } catch (networkErr) {
         clearTimeout(timeoutId);
         if (networkErr.name === "AbortError") throw networkErr;
-        // API недоступен напрямую из браузера (CORS/нет бэкенда) —
-        // анализируем пиксели фото сами, чтобы не принимать всё подряд.
-        const primaryPhoto = photosArray[0];
-        const pixelResult = primaryPhoto ? await analyzeImagePixels(primaryPhoto.base64) : null;
-        if (pixelResult) {
-          const { trashScore, cleanScore } = pixelResult;
-          if (cleanScore > trashScore && cleanScore > 20) {
-            // Похоже на чистое место, небо, газон или асфальт без мусора
-            const rejectNotes = [
-              "На фото не видно мусора или отходов в общественном месте",
-              "Место выглядит чистым, мусор не обнаружен",
-              "На снимке нет признаков загрязнения",
-            ];
-            const note = rejectNotes[Math.floor(Math.random() * rejectNotes.length)];
-            return { content: [{ type: "text", text: JSON.stringify({ is_trash: false, severity: 0, category: null, note, duplicate_of: null }) }] };
-          }
-        }
-        return mockAnthropicResponse();
+        // Сеть/CORS не дали достучаться напрямую до API (нет своего бэкенда с ключом) —
+        // временная заглушка, чтобы поток демо работал, пока не подключен реальный сервер.
+        return mockAnthropicResponse(buildContent(candidatesForCall));
       }
       clearTimeout(timeoutId);
       const json = await resp.json();
@@ -1803,60 +1451,18 @@ function App() {
     setScreen("rejected");
   }
  
-  const showTabs = screen === "home" || screen === "profile" || screen === "leaderboard" || screen === "settings";
+  const showTabs = screen === "home" || screen === "profile" || screen === "leaderboard";
   const t = (key) => (STRINGS[language] && STRINGS[language][key]) || STRINGS.ru[key] || key;
- 
-  const isTelegramApp =
-    typeof window !== "undefined" &&
-    window.Telegram &&
-    window.Telegram.WebApp &&
-    !!window.Telegram.WebApp.initData;
- 
-  const LIGHT_PALETTE = {
-    forest: "#1B4332", forest2: "#2D6A4F", amber: "#FFB703", lightbg: "#F6FAF7",
-    card: "#EAF4EE", textdark: "#16241F", muted: "#5C6B66", red: "#C1440E", white: "#FFFFFF",
-  };
-  const DARK_PALETTE = {
-    forest: "#3FA374", forest2: "#4FC189", amber: "#FFD166", lightbg: "#0F1C17",
-    card: "#1C2E27", textdark: "#F0F7F3", muted: "#A9C4B8", red: "#FF8A66", white: "#1C2E27",
-  };
-  const palette = theme === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
-  const themeCssVars = {
-    "--ecobin-forest": palette.forest,
-    "--ecobin-forest2": palette.forest2,
-    "--ecobin-amber": palette.amber,
-    "--ecobin-lightbg": palette.lightbg,
-    "--ecobin-card": palette.card,
-    "--ecobin-textdark": palette.textdark,
-    "--ecobin-muted": palette.muted,
-    "--ecobin-red": palette.red,
-    "--ecobin-white": palette.white,
-  };
- 
-  const telegramHeight = tgViewportHeight ? `${tgViewportHeight}px` : "100vh";
-  const telegramWidthPx = tgViewportWidth || (typeof window !== "undefined" ? window.innerWidth : 380);
- 
-  const outerWrapStyle = isTelegramApp
-    ? { width: "100%", minHeight: telegramHeight, ...themeCssVars }
-    : { display: "flex", justifyContent: "center", padding: "24px 12px", fontFamily: "-apple-system, Segoe UI, Roboto, sans-serif", ...themeCssVars };
- 
-  const phoneFrameStyle = isTelegramApp
-    ? { width: telegramWidthPx }
-    : { width: 380, background: "#0c1a14", borderRadius: 40, padding: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" };
- 
-  const screenBoxStyle = isTelegramApp
-    ? { width: telegramWidthPx, height: tgViewportHeight || undefined, minHeight: tgViewportHeight ? undefined : telegramHeight, background: LIGHTBG, position: "relative", display: "flex", flexDirection: "column" }
-    : { width: "100%", height: 740, background: LIGHTBG, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" };
  
   return (
     <LanguageContext.Provider value={language}>
-    <div style={outerWrapStyle}>
-      <div style={phoneFrameStyle}>
-        <div style={screenBoxStyle}>
+    <div style={{ display: "flex", justifyContent: "center", padding: "24px 12px", fontFamily: "-apple-system, Segoe UI, Roboto, sans-serif" }}>
+      <div style={{ width: 380, background: "#0c1a14", borderRadius: 40, padding: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+        <div style={{ width: "100%", height: 740, background: LIGHTBG, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
  
           {screen !== "splash" && (
-            <div style={{ display: "flex", justifyContent: isTelegramApp ? "flex-end" : "space-between", alignItems: "center", padding: "10px 18px 4px", fontSize: 12, color: TEXTDARK, fontWeight: 600 }}>
-              {!isTelegramApp && <span>9:41</span>}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 18px 4px", fontSize: 12, color: TEXTDARK, fontWeight: 600 }}>
+              <span>9:41</span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
                   onClick={replayAsNewUser}
@@ -1871,7 +1477,7 @@ function App() {
             </div>
           )}
  
-          <div style={{ flex: 1, overflowY: "auto", padding: screen === "splash" ? 0 : "8px 18px 0", fontSize: `${fontScale * 100}%` }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: screen === "splash" ? 0 : "8px 18px 0" }}>
             {screen === "splash" && <SplashScreen exiting={splashExiting} />}
             {screen === "language-select" && (
               <LanguageSelectScreen
@@ -1883,18 +1489,7 @@ function App() {
             )}
             {screen === "onboarding" && <OnboardingScreen onDone={finishOnboarding} />}
             {screen === "home" && <HomeScreen points={points} reports={reports} onSelectPin={setSelectedId} pendingCount={pendingQueue.length} isOnline={isOnline} binFills={binFills} binDevices={binDevices} onSelectBin={setSelectedBinId} onOpenDashboard={() => setScreen("dashboard")} myLocation={myLocation} />}
-            {screen === "profile" && <ProfileScreen points={points} reports={reports} onReset={resetDemo} onExport={exportReportsCSV} />}
-            {screen === "settings" && (
-              <SettingsScreen
-                onBack={() => setScreen("home")}
-                language={language}
-                onSetLanguage={setLanguage}
-                theme={theme}
-                onSetTheme={setTheme}
-                fontScale={fontScale}
-                onSetFontScale={setFontScale}
-              />
-            )}
+            {screen === "profile" && <ProfileScreen points={points} reports={reports} onReset={resetDemo} onExport={exportReportsCSV} language={language} onSetLanguage={setLanguage} />}
             {screen === "leaderboard" && <LeaderboardScreen reports={reports} />}
             {screen === "dashboard" && <DashboardScreen reports={reports} binFills={binFills} binDevices={binDevices} onBack={() => setScreen("home")} />}
             {screen === "capture" && (
@@ -1969,33 +1564,28 @@ function App() {
           )}
  
           {showTabs && (
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-around", padding: "10px 8px 18px", background: WHITE, borderTop: `1px solid ${CARD}` }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-around", padding: "10px 18px 18px", background: "#FFFFFF", borderTop: "1px solid #E3ECE6" }}>
               <button onClick={() => setScreen("home")} style={navBtnStyle} aria-label={t("navHome")}>
-                <Home size={20} color={screen === "home" ? FOREST : MUTED} />
-                <span style={{ fontSize: 10, color: screen === "home" ? FOREST : MUTED, fontWeight: screen === "home" ? 700 : 500 }}>{t("navHome")}</span>
+                <Home size={22} color={screen === "home" ? FOREST : MUTED} />
+                <span style={{ fontSize: 11, color: screen === "home" ? FOREST : MUTED, fontWeight: screen === "home" ? 700 : 500 }}>{t("navHome")}</span>
               </button>
  
               <button onClick={() => setScreen("leaderboard")} style={navBtnStyle} aria-label={t("navRating")}>
-                <Trophy size={20} color={screen === "leaderboard" ? FOREST : MUTED} />
-                <span style={{ fontSize: 10, color: screen === "leaderboard" ? FOREST : MUTED, fontWeight: screen === "leaderboard" ? 700 : 500 }}>{t("navRating")}</span>
+                <Trophy size={22} color={screen === "leaderboard" ? FOREST : MUTED} />
+                <span style={{ fontSize: 11, color: screen === "leaderboard" ? FOREST : MUTED, fontWeight: screen === "leaderboard" ? 700 : 500 }}>{t("navRating")}</span>
               </button>
  
               <button
                 onClick={openCapture}
                 aria-label={t("reportTrash")}
-                style={{ width: 50, height: 50, borderRadius: 25, background: FOREST, border: "none", display: "flex", alignItems: "center", justifyContent: "center", marginTop: -22, boxShadow: "0 6px 16px rgba(27,67,50,0.4)", cursor: "pointer", flexShrink: 0 }}
+                style={{ width: 56, height: 56, borderRadius: 28, background: FOREST, border: "none", display: "flex", alignItems: "center", justifyContent: "center", marginTop: -26, boxShadow: "0 6px 16px rgba(27,67,50,0.4)", cursor: "pointer" }}
               >
-                <Plus size={24} color="#FFFFFF" />
+                <Plus size={26} color="#FFFFFF" />
               </button>
  
               <button onClick={() => setScreen("profile")} style={navBtnStyle} aria-label={t("navProfile")}>
-                <User size={20} color={screen === "profile" ? FOREST : MUTED} />
-                <span style={{ fontSize: 10, color: screen === "profile" ? FOREST : MUTED, fontWeight: screen === "profile" ? 700 : 500 }}>{t("navProfile")}</span>
-              </button>
- 
-              <button onClick={() => setScreen("settings")} style={navBtnStyle} aria-label={t("navSettings")}>
-                <Settings size={20} color={screen === "settings" ? FOREST : MUTED} />
-                <span style={{ fontSize: 10, color: screen === "settings" ? FOREST : MUTED, fontWeight: screen === "settings" ? 700 : 500 }}>{t("navSettings")}</span>
+                <User size={22} color={screen === "profile" ? FOREST : MUTED} />
+                <span style={{ fontSize: 11, color: screen === "profile" ? FOREST : MUTED, fontWeight: screen === "profile" ? 700 : 500 }}>{t("navProfile")}</span>
               </button>
             </div>
           )}
@@ -2106,7 +1696,7 @@ function LanguageSelectScreen({ onSelect }) {
             onClick={() => onSelect(o.code)}
             style={{
               display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16,
-              border: `1px solid ${CARD}`, background: WHITE, cursor: "pointer", textAlign: "left",
+              border: "1px solid #E3ECE6", background: "#FFFFFF", cursor: "pointer", textAlign: "left",
             }}
           >
             <span style={{ fontSize: 22 }}>{o.flag}</span>
@@ -2226,7 +1816,7 @@ function HomeScreen({ points, reports, onSelectPin, pendingCount, isOnline, binF
         <StatCard label={t("activeReports")} value={activeCount} icon={<MapPin size={16} color={FOREST} />} />
       </div>
  
-      <div style={{ marginTop: 10, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ marginTop: 10, background: "#FFFFFF", border: "1px solid #E3ECE6", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
         <ProgressRing total={totalCount} cleaned={cleanedCount} />
         <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: TEXTDARK }}>{t("today")}: {totalCount}</p>
@@ -2256,7 +1846,7 @@ function HomeScreen({ points, reports, onSelectPin, pendingCount, isOnline, binF
               aria-label={t("openReportLabel")}
               style={{ position: "absolute", top: r.pos.top, left: r.pos.left, transform: "translate(-50%, -50%)", background: "none", border: "none", padding: 8, cursor: "pointer" }}
             >
-              <div style={{ width: 12, height: 12, borderRadius: 6, background: color, border: `2px solid ${WHITE}`, boxShadow: `0 0 0 3px ${r.status === "cleaned" ? "rgba(45,106,79,0.3)" : "rgba(255,183,3,0.3)"}` }} />
+              <div style={{ width: 12, height: 12, borderRadius: 6, background: color, border: "2px solid #FFFFFF", boxShadow: `0 0 0 3px ${r.status === "cleaned" ? "rgba(45,106,79,0.3)" : "rgba(255,183,3,0.3)"}` }} />
             </button>
           );
         })}
@@ -2272,10 +1862,10 @@ function HomeScreen({ points, reports, onSelectPin, pendingCount, isOnline, binF
               aria-label={binNameLabel(bin.id, lang)}
               style={{ position: "absolute", top: bin.pos.top, left: bin.pos.left, transform: "translate(-50%, -50%)", background: "none", border: "none", padding: 4, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}
             >
-              <div style={{ width: 22, height: 22, borderRadius: 7, background: WHITE, border: `2px solid ${markerColor}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.18)", opacity: online ? 1 : 0.6 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 7, background: "#FFFFFF", border: `2px solid ${markerColor}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.18)", opacity: online ? 1 : 0.6 }}>
                 <Trash2 size={12} color={markerColor} />
               </div>
-              <span style={{ fontSize: 8.5, fontWeight: 700, color: markerColor, background: WHITE, borderRadius: 5, padding: "0 3px", marginTop: 1 }}>{online ? `${fill}%` : "···"}</span>
+              <span style={{ fontSize: 8.5, fontWeight: 700, color: markerColor, background: "#FFFFFF", borderRadius: 5, padding: "0 3px", marginTop: 1 }}>{online ? `${fill}%` : "···"}</span>
             </button>
           );
         })}
@@ -2370,7 +1960,7 @@ function BinDetailSheet({ bin, fill, device, onClose }) {
   return (
     <>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(13,26,20,0.45)", zIndex: 5 }} />
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: WHITE, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: "10px 18px 20px", zIndex: 6, boxShadow: "0 -10px 30px rgba(0,0,0,0.25)" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: "10px 18px 20px", zIndex: 6, boxShadow: "0 -10px 30px rgba(0,0,0,0.25)" }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: "#D7E5DC", margin: "0 auto 14px" }} />
  
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2435,7 +2025,7 @@ function ReportDetailSheet({ report, onClose, onStartCleanup, onMarkCleanedNoPho
   return (
     <>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(13,26,20,0.45)", zIndex: 5 }} />
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: WHITE, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: "10px 18px 20px", zIndex: 6, boxShadow: "0 -10px 30px rgba(0,0,0,0.25)" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: "10px 18px 20px", zIndex: 6, boxShadow: "0 -10px 30px rgba(0,0,0,0.25)" }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: "#D7E5DC", margin: "0 auto 14px" }} />
  
         {isCleaned && report.afterImg ? (
@@ -2504,7 +2094,7 @@ function ReportTimeline({ report, isCleaned }) {
                 width: 14,
                 height: 14,
                 borderRadius: 7,
-                background: s.done ? FOREST2 : CARD,
+                background: s.done ? FOREST2 : "#E3ECE6",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -2513,7 +2103,7 @@ function ReportTimeline({ report, isCleaned }) {
             >
               {s.done && <Check size={9} color="#FFFFFF" />}
             </div>
-            {i < steps.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 18, background: s.done ? FOREST2 : CARD }} />}
+            {i < steps.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 18, background: s.done ? FOREST2 : "#E3ECE6" }} />}
           </div>
           <div style={{ paddingBottom: 14 }}>
             <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: s.done ? TEXTDARK : MUTED }}>{s.label}</p>
@@ -2528,7 +2118,7 @@ function ReportTimeline({ report, isCleaned }) {
 function ReportRow({ report }) {
   const lang = useLang();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: WHITE, borderRadius: 12, padding: 8, border: `1px solid ${CARD}` }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: 12, padding: 8, border: "1px solid #E3ECE6" }}>
       {report.img ? (
         <img src={report.img} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} />
       ) : (
@@ -2620,13 +2210,13 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
         <div style={{ display: "flex", gap: 4, background: CARD, borderRadius: 9, padding: 3 }}>
           <button
             onClick={() => setMapMode("dots")}
-            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "dots" ? WHITE : "transparent", color: mapMode === "dots" ? FOREST : MUTED }}
+            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "dots" ? "#FFFFFF" : "transparent", color: mapMode === "dots" ? FOREST : MUTED }}
           >
             {t("mapModeDots")}
           </button>
           <button
             onClick={() => setMapMode("heatmap")}
-            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "heatmap" ? WHITE : "transparent", color: mapMode === "heatmap" ? FOREST : MUTED }}
+            style={{ padding: "3px 8px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: mapMode === "heatmap" ? "#FFFFFF" : "transparent", color: mapMode === "heatmap" ? FOREST : MUTED }}
           >
             {t("mapModeHeatmap")}
           </button>
@@ -2707,7 +2297,7 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
         {feedEntries.map((f, i) => {
           const Icon = f.icon;
           return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 10, padding: "7px 10px" }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#FFFFFF", border: "1px solid #E3ECE6", borderRadius: 10, padding: "7px 10px" }}>
               <Icon size={13} color={f.color} style={{ flexShrink: 0 }} />
               <span style={{ flex: 1, fontSize: 10.5, color: TEXTDARK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.text}</span>
               <span style={{ fontSize: 9.5, color: MUTED, flexShrink: 0 }}>{f.time}</span>
@@ -2717,7 +2307,7 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
       </div>
  
       <p style={{ fontSize: 13, fontWeight: 700, color: TEXTDARK, margin: "18px 0 8px" }}>{t("weeklyReportsTitle")}</p>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 12, padding: "10px 10px 6px" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90, background: "#FFFFFF", border: "1px solid #E3ECE6", borderRadius: 12, padding: "10px 10px 6px" }}>
         {weekData.map((d, i) => (
           <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
             <span style={{ fontSize: 9, color: MUTED, marginBottom: 2 }}>{d.count}</span>
@@ -2756,7 +2346,7 @@ function DashboardScreen({ reports, binFills, binDevices, onBack }) {
           const fill = binFills[i];
           const st = binStatus(fill, lang);
           return (
-            <div key={bin.id} style={{ display: "flex", alignItems: "center", gap: 10, background: WHITE, border: `1px solid ${CARD}`, borderRadius: 12, padding: 10 }}>
+            <div key={bin.id} style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", border: "1px solid #E3ECE6", borderRadius: 12, padding: 10 }}>
               <Trash2 size={16} color={st.color} />
               <span style={{ flex: 1, fontSize: 11.5, color: TEXTDARK }}>{binNameLabel(bin.id, lang)}</span>
               <span style={{ fontSize: 11.5, fontWeight: 700, color: st.color }}>{fill}%</span>
@@ -2776,23 +2366,19 @@ function LeaderboardScreen({ reports }) {
   const yourTotal = genuine.length;
   const yourCleaned = genuine.filter((r) => r.status === "cleaned").length;
  
-  const sortFn = statMode === "ratio"
-    ? (a, b) => (b.total > 0 ? b.completed / b.total : 0) - (a.total > 0 ? a.completed / a.total : 0)
-    : (a, b) => b.completed - a.completed;
- 
   const districts = [
     { name: t("districtMirobod"), total: 162, completed: 142 },
     { name: t("districtYunusobod"), total: 135, completed: 118 },
     { name: t("districtChilonzor"), total: 110, completed: 97 },
     { name: t("yourDistrict"), total: yourTotal, completed: yourCleaned, isYou: true },
-  ].sort(sortFn);
+  ].sort((a, b) => b.completed - a.completed);
  
   const cities = [
     { name: t("cityTashkent"), total: 470, completed: 412 },
     { name: t("citySamarkand"), total: 310, completed: 268 },
     { name: t("cityBukhara"), total: 225, completed: 190 },
     { name: t("yourCity"), total: yourTotal, completed: yourCleaned, isYou: true },
-  ].sort(sortFn);
+  ].sort((a, b) => b.completed - a.completed);
  
   const data = tab === "districts" ? districts : cities;
   const maxCompleted = Math.max(...data.map((d) => d.completed), 1);
@@ -2808,7 +2394,7 @@ function LeaderboardScreen({ reports }) {
           onClick={() => setTab("districts")}
           style={{
             flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
-            background: tab === "districts" ? WHITE : "transparent",
+            background: tab === "districts" ? "#FFFFFF" : "transparent",
             color: tab === "districts" ? FOREST : MUTED,
             fontWeight: 700, fontSize: 12.5,
             boxShadow: tab === "districts" ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
@@ -2820,7 +2406,7 @@ function LeaderboardScreen({ reports }) {
           onClick={() => setTab("cities")}
           style={{
             flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
-            background: tab === "cities" ? WHITE : "transparent",
+            background: tab === "cities" ? "#FFFFFF" : "transparent",
             color: tab === "cities" ? FOREST : MUTED,
             fontWeight: 700, fontSize: 12.5,
             boxShadow: tab === "cities" ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
@@ -2834,13 +2420,13 @@ function LeaderboardScreen({ reports }) {
         <div style={{ display: "flex", gap: 4, background: CARD, borderRadius: 9, padding: 3 }}>
           <button
             onClick={() => setStatMode("ratio")}
-            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "ratio" ? WHITE : "transparent", color: statMode === "ratio" ? FOREST : MUTED }}
+            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "ratio" ? "#FFFFFF" : "transparent", color: statMode === "ratio" ? FOREST : MUTED }}
           >
             {t("statModeRatio")}
           </button>
           <button
             onClick={() => setStatMode("count")}
-            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "count" ? WHITE : "transparent", color: statMode === "count" ? FOREST : MUTED }}
+            style={{ padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 9.5, fontWeight: 700, background: statMode === "count" ? "#FFFFFF" : "transparent", color: statMode === "count" ? FOREST : MUTED }}
           >
             {t("statModeCount")}
           </button>
@@ -2855,8 +2441,8 @@ function LeaderboardScreen({ reports }) {
             <div
               key={d.name}
               style={{
-                background: d.isYou ? CARD : WHITE,
-                border: d.isYou ? `1px solid ${FOREST2}` : `1px solid ${CARD}`,
+                background: d.isYou ? CARD : "#FFFFFF",
+                border: d.isYou ? `1px solid ${FOREST2}` : "1px solid #E3ECE6",
                 borderRadius: 14,
                 padding: "10px 14px",
               }}
@@ -2917,89 +2503,7 @@ function computeAchCtx(reports, points) {
   };
 }
  
-function SettingsScreen({ onBack, language, onSetLanguage, theme, onSetTheme, fontScale, onSetFontScale }) {
-  const t = useT();
-  return (
-    <div style={{ paddingBottom: 12, minHeight: "100%", background: LIGHTBG }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-        <button onClick={onBack} aria-label={t("back")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-          <ChevronLeft size={22} color={TEXTDARK} />
-        </button>
-        <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: TEXTDARK }}>{t("appearanceTitle")}</p>
-      </div>
- 
-      <p style={{ fontSize: 13, fontWeight: 700, color: TEXTDARK, margin: "20px 0 8px" }}>{t("language")}</p>
-      <div style={{ display: "flex", gap: 6, background: CARD, borderRadius: 12, padding: 4 }}>
-        {[
-          { code: "ru", label: "RU" },
-          { code: "uz", label: "UZ" },
-          { code: "en", label: "EN" },
-        ].map((l) => (
-          <button
-            key={l.code}
-            onClick={() => onSetLanguage(l.code)}
-            style={{
-              flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
-              background: language === l.code ? WHITE : "transparent",
-              color: language === l.code ? FOREST : MUTED,
-              fontWeight: 700, fontSize: 12.5,
-              boxShadow: language === l.code ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-            }}
-          >
-            {l.label}
-          </button>
-        ))}
-      </div>
- 
-      <p style={{ fontSize: 13, fontWeight: 700, color: TEXTDARK, margin: "20px 0 8px" }}>{t("appearanceTitle")}</p>
-      <div style={{ display: "flex", gap: 6, background: CARD, borderRadius: 12, padding: 4 }}>
-        {[
-          { code: "light", label: t("themeLight") },
-          { code: "dark", label: t("themeDark") },
-        ].map((opt) => (
-          <button
-            key={opt.code}
-            onClick={() => onSetTheme(opt.code)}
-            style={{
-              flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
-              background: theme === opt.code ? WHITE : "transparent",
-              color: theme === opt.code ? FOREST : MUTED,
-              fontWeight: 700, fontSize: 12.5,
-              boxShadow: theme === opt.code ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
- 
-      <p style={{ fontSize: 13, fontWeight: 700, color: TEXTDARK, margin: "20px 0 8px" }}>{t("fontSizeTitle")}</p>
-      <div style={{ display: "flex", gap: 6, background: CARD, borderRadius: 12, padding: 4 }}>
-        {[
-          { v: 0.9, label: t("fontSmall") },
-          { v: 1, label: t("fontMedium") },
-          { v: 1.15, label: t("fontLarge") },
-        ].map((opt) => (
-          <button
-            key={opt.v}
-            onClick={() => onSetFontScale(opt.v)}
-            style={{
-              flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
-              background: fontScale === opt.v ? WHITE : "transparent",
-              color: fontScale === opt.v ? FOREST : MUTED,
-              fontWeight: 700, fontSize: 12.5,
-              boxShadow: fontScale === opt.v ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
- 
-function ProfileScreen({ points, reports, onReset, onExport }) {
+function ProfileScreen({ points, reports, onReset, onExport, language, onSetLanguage }) {
   const t = useT();
   const achCtx = computeAchCtx(reports, points);
   return (
@@ -3015,6 +2519,29 @@ function ProfileScreen({ points, reports, onReset, onExport }) {
         <p style={{ margin: "2px 0 0", fontSize: 13, color: MUTED }}>{t("points").toLowerCase()} · {t(levelTitle(points))}</p>
       </div>
  
+      <p style={{ fontSize: 13, fontWeight: 700, color: TEXTDARK, margin: "20px 0 8px" }}>{t("language")}</p>
+      <div style={{ display: "flex", gap: 6, background: CARD, borderRadius: 12, padding: 4 }}>
+        {[
+          { code: "ru", label: "RU" },
+          { code: "uz", label: "UZ" },
+          { code: "en", label: "EN" },
+        ].map((l) => (
+          <button
+            key={l.code}
+            onClick={() => onSetLanguage(l.code)}
+            style={{
+              flex: 1, padding: "7px 0", borderRadius: 9, border: "none", cursor: "pointer",
+              background: language === l.code ? "#FFFFFF" : "transparent",
+              color: language === l.code ? FOREST : MUTED,
+              fontWeight: 700, fontSize: 12.5,
+              boxShadow: language === l.code ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+            }}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+ 
       <p style={{ fontSize: 13, fontWeight: 700, color: TEXTDARK, margin: "20px 0 8px" }}>{t("achievementsTitle")}</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
         {ACHIEVEMENTS.map((a) => {
@@ -3027,7 +2554,7 @@ function ProfileScreen({ points, reports, onReset, onExport }) {
               title={unlocked ? t(a.titleKey) : t("achLocked")}
               style={{
                 background: unlocked ? CARD : "#F3F5F4",
-                border: unlocked ? `1px solid ${FOREST2}` : `1px solid ${CARD}`,
+                border: unlocked ? `1px solid ${FOREST2}` : "1px solid #E3ECE6",
                 borderRadius: 16,
                 padding: "14px 8px",
                 textAlign: "center",
@@ -3042,7 +2569,7 @@ function ProfileScreen({ points, reports, onReset, onExport }) {
               {prog && (
                 <>
                   <p style={{ margin: "5px 0 2px", fontSize: 9, fontWeight: 700, color: FOREST2 }}>{prog[0]}/{prog[1]}</p>
-                  <div style={{ height: 4, borderRadius: 2, background: CARD, overflow: "hidden" }}>
+                  <div style={{ height: 4, borderRadius: 2, background: "#E3ECE6", overflow: "hidden" }}>
                     <div style={{ width: `${(prog[0] / prog[1]) * 100}%`, height: "100%", background: FOREST2 }} />
                   </div>
                 </>
@@ -3114,7 +2641,7 @@ function CaptureScreen({ photos, onBack, onPickCamera, onRemove, onSubmit, error
                 <button
                   onClick={() => onRemove(i)}
                   aria-label={t("removePhoto")}
-                  style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, background: RED, border: `2px solid ${WHITE}`, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, background: RED, border: "2px solid #FFFFFF", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                 >
                   <X size={12} color="#FFFFFF" />
                 </button>
@@ -3526,8 +3053,3 @@ const secondaryBtnStyle = {
   background: "transparent", color: MUTED, fontWeight: 600, fontSize: 13, cursor: "pointer",
 };
  
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
-</script>
-</body>
-</html>
