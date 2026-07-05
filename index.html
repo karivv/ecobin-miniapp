@@ -1496,7 +1496,7 @@ function App() {
       try {
         resp = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
           signal: controller.signal,
           body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 500, messages: [{ role: "user", content }] }),
         });
@@ -1601,8 +1601,8 @@ function App() {
     const allCandidates = [];
 
     // Gemini API вызывается напрямую из браузера — Google разрешает CORS для своего API
-    const GEMINI_KEY = "AQ.Ab8RN6IwYzeyIP-C7ijxg35asn-yJevxx6nOGlLto98L-0vdQA";
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+    const GEMINI_KEY = "AQ.Ab8RN6JkSIf74eBE1x6pqwA5lh5knvxsPwzNNsAIgainTCPkoQ";
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
 
     async function callAI(candidatesForCall, timeoutMs) {
       const controller = new AbortController();
