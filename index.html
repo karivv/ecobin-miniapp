@@ -1608,7 +1608,7 @@ function App() {
 
       let resp;
       try {
-        resp = await fetch(GEMINI_URL, {
+        resp = await fetch(GEMINI_URL + "?key=" + GEMINI_KEY, {, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
