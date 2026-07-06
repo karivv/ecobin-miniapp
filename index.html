@@ -1147,7 +1147,7 @@ function mockAnthropicResponse() {
   }) }] };
 }
 
-function mockAnthropicCleanResponse() {
+function mockGeminiCleanResponse() {
   const notes = ["Место убрано, мусора не видно", "Территория чистая", "Мусор убран успешно"];
   return { content: [{ type: "text", text: JSON.stringify({
     is_clean: true, note: notes[Math.floor(Math.random() * notes.length)],
@@ -1160,6 +1160,23 @@ function dataUrlToParts(dataUrl) {
   return { mediaType: match[1], base64: match[2] };
 }
 
+  async function callGemini(parts, timeoutMs = 45000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(GEMINI_URL + "?key=" + GEMINI_KEY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({ contents: [{ parts }], generationConfig: { temperature: 0.1, maxOutputTokens: 300 } }),
+    });
+    clearTimeout(timeoutId);
+    const json = await resp.json();
+    if (!resp.ok || json.error) throw new Error(json?.error?.message || "Gemini API error");
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return { content: [{ type: "text", text }] };
+  } catch (err) { clearTimeout(timeoutId); throw err; }
+}
 function buildPrompt(numPhotos, numCandidates) {
   let text = `Ты — модуль проверки фотографий для приложения по уборке города в Узбекистане.\n`;
   if (numPhotos > 1) {
@@ -1583,7 +1600,7 @@ function App() {
 
     // Gemini API вызывается напрямую из браузера — Google разрешает CORS для своего API
     const GEMINI_KEY = "AQ.Ab8RN6JkSIf74eBE1x6pqwA5lh5knvxsPwzNNsAIgainTCPkoQ";
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+    const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
     async function callAI(candidatesForCall, timeoutMs) {
       const controller = new AbortController();
@@ -1608,7 +1625,7 @@ function App() {
 
       let resp;
       try {
-        resp = await fetch(GEMINI_URL + "?key=" + GEMINI_KEY, {, {
+        resp = await fetch(GEMINI_URL + "?key=" + GEMINI_KEY, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
