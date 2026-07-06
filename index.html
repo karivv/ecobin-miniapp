@@ -563,8 +563,8 @@ async function callGemini(parts,timeoutMs=45000){
   const controller=new AbortController();
   const timeoutId=setTimeout(()=>controller.abort(),timeoutMs);
   try {
-    const resp=await fetch(GEMINI_URL+"?key="+GEMINI_KEY,{
-      method:"POST",headers:{"Content-Type":"application/json"},signal:controller.signal,
+    const resp=await fetch(GEMINI_URL,{
+      method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_KEY},
       body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1,maxOutputTokens:300}}),
     });
     clearTimeout(timeoutId);
