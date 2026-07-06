@@ -1478,46 +1478,27 @@ function App() {
     setAfterErrorMsg("");
 
     const beforeParts = dataUrlToParts(report.img) || { mediaType: "image/jpeg", base64: afterPhoto.base64 };
-    const content = [
-      { type: "text", text: "Фото ДО уборки:" },
-      { type: "image", source: { type: "base64", media_type: beforeParts.mediaType, data: beforeParts.base64 } },
-      { type: "text", text: "Фото ПОСЛЕ уборки (новое):" },
-      { type: "image", source: { type: "base64", media_type: afterPhoto.mediaType, data: afterPhoto.base64 } },
-      {
-        type: "text",
-        text: `Сравни два фото одного и того же места. Первое — до уборки (был мусор), второе — после. Определи, действительно ли на втором фото место теперь чистое (мусор убран). Ответь СТРОГО в виде JSON без markdown: {"is_clean": true или false, "note": короткий комментарий НА РУССКОМ языке, не больше 12 слов — всегда на русском, независимо от языка интерфейса}.`,
-      },
+
+    const parts = [
+      { text: "Фото ДО уборки:" },
+      { inline_data: { mime_type: beforeParts.mediaType, data: beforeParts.base64 } },
+      { text: "Фото ПОСЛЕ уборки (новое):" },
+      { inline_data: { mime_type: afterPhoto.mediaType, data: afterPhoto.base64 } },
+      { text: `Сравни два фото одного и того же места. Первое — до уборки (был мусор), второе — после. Определи, действительно ли на втором фото место теперь чистое (мусор убран). Ответь СТРОГО в виде JSON без markdown: {"is_clean": true или false, "note": короткий комментарий НА РУССКОМ языке, не больше 12 слов}.` },
     ];
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
-      let resp, data;
+      let data;
       try {
-        resp = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
-          signal: controller.signal,
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 500, messages: [{ role: "user", content }] }),
-        });
-        clearTimeout(timeoutId);
-        data = await resp.json();
+        data = await callGemini(parts, 45000);
       } catch (networkErr) {
-        clearTimeout(timeoutId);
         if (networkErr.name === "AbortError") throw networkErr;
-        data = mockAnthropicCleanResponse();
-        resp = { ok: true };
-      }
-      if (!resp.ok || data.error) {
-        setAfterErrorMsg(t("defaultErrorMsg"));
-        setScreen("afterCapture");
-        return;
+        data = mockGeminiCleanResponse();
       }
       const textBlock = (data.content || []).map((b) => b.text || "").join("\n");
       const clean = textBlock.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setAfterAnalysis(parsed);
-
       if (parsed.is_clean) {
         const beforeCtx = computeAchCtx(reports, points);
         markCleaned(cleaningReportId, afterPhoto.dataUrl);
@@ -1530,7 +1511,7 @@ function App() {
         setScreen("afterRejected");
       }
     } catch (err) {
-      setAfterErrorMsg(err.name === "AbortError" ? t("defaultErrorMsg") : t("defaultErrorMsg"));
+      setAfterErrorMsg(t("defaultErrorMsg"));
       setScreen("afterCapture");
     }
   }
