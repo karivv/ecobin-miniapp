@@ -268,6 +268,8 @@ const Settings = makeIcon([
 
 <script type="text/babel" data-presets="react">
 const { useState, useRef, useEffect, createContext, useContext } = React;
+  const GEMINI_KEY = "AQ.Ab8RN6JkSIf74eBE1x6pqwA5lh5knvxsPwzNNsAIgainTCPkoQ";
+  const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 
 const FOREST = "var(--ecobin-forest, #1B4332)";
@@ -1597,10 +1599,6 @@ function App() {
 
     // Временно отключено для надёжности: AI-сравнение с эталонами усложняет запрос
     const allCandidates = [];
-
-    // Gemini API вызывается напрямую из браузера — Google разрешает CORS для своего API
-    const GEMINI_KEY = "AQ.Ab8RN6JkSIf74eBE1x6pqwA5lh5knvxsPwzNNsAIgainTCPkoQ";
-    const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
     async function callAI(candidatesForCall, timeoutMs) {
       const controller = new AbortController();
