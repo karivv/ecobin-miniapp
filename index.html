@@ -885,7 +885,7 @@ function App() {
               </div>
             </div>
           )}
-          <div style={{flex:1,overflowY:"auto",padding:screen==="splash"?0:"8px 18px 0",...(fontScale!==1?{transform:`scale(${fontScale})`,transformOrigin:"top center",width:`${100/fontScale}%`,minHeight:0}:{})}}>
+          <div style={{flex:1,overflowY:"auto",padding:screen==="splash"?0:"8px 18px 0"}}>
             {screen==="splash"&&<SplashScreen exiting={splashExiting}/>}
             {screen==="language-select"&&<LanguageSelectScreen onSelect={(code)=>{setLanguage(code);setScreen("onboarding");}}/>}
             {screen==="onboarding"&&<OnboardingScreen onDone={finishOnboarding}/>}
