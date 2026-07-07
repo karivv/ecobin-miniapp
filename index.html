@@ -89,10 +89,10 @@ const Settings=makeIcon([h("circle",{key:1,cx:12,cy:12,r:3}),h("path",{key:2,d:"
 </script>
 <script type="text/babel" data-presets="react">
 const { useState, useRef, useEffect, createContext, useContext } = React;
-
+ 
 const GEMINI_KEY = "AQ.Ab8RN6JkSIf74eBE1x6pqwA5lh5knvxsPwzNNsAIgainTCPkoQ";
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-
+ 
 const FOREST = "var(--ecobin-forest, #1B4332)";
 const FOREST2 = "var(--ecobin-forest2, #2D6A4F)";
 const AMBER = "var(--ecobin-amber, #FFB703)";
@@ -102,16 +102,16 @@ const TEXTDARK = "var(--ecobin-textdark, #16241F)";
 const MUTED = "var(--ecobin-muted, #5C6B66)";
 const RED = "var(--ecobin-red, #C1440E)";
 const WHITE = "var(--ecobin-white, #FFFFFF)";
-
+ 
 const SEED_REPORTS = [
   { id:"seed-1",category:"пластик",severity:3,note:"Мусор у тротуара",points:30,time:"вчера",img:null,status:"pending",pos:{top:"32%",left:"62%"} },
   { id:"seed-2",category:"смешанный",severity:4,note:"Переполненный контейнер",points:40,time:"2 дня назад",img:null,status:"cleaned",pos:{top:"58%",left:"28%"} },
   { id:"seed-3",category:"листва",severity:2,note:"Куча листвы у дерева",points:20,time:"3 дня назад",img:null,status:"pending",pos:{top:"45%",left:"45%"} },
 ];
-
+ 
 const LanguageContext = createContext("ru");
 function useLang() { return useContext(LanguageContext); }
-
+ 
 const CATEGORY_LABELS = {
   "пластик":{ru:"пластик",uz:"plastik",en:"plastic"},
   "стекло":{ru:"стекло",uz:"shisha",en:"glass"},
@@ -130,14 +130,14 @@ const CATEGORY_LABELS = {
   "та же точка":{ru:"та же точка",uz:"xuddi shu joy",en:"same spot"},
 };
 function categoryLabel(cat,lang){ const e=CATEGORY_LABELS[cat]; return (e&&(e[lang]||e.ru))||cat; }
-
+ 
 const NOTE_LABELS = {
   "Мусор у тротуара":{ru:"Мусор у тротуара",uz:"Yo'l chetida chiqindi",en:"Trash by the sidewalk"},
   "Переполненный контейнер":{ru:"Переполненный контейнер",uz:"To'lib ketgan konteyner",en:"Overflowing container"},
   "Куча листвы у дерева":{ru:"Куча листвы у дерева",uz:"Daraxt tagida barglar uyumi",en:"Pile of leaves by a tree"},
 };
 function noteLabel(note,lang){ const e=NOTE_LABELS[note]; if(e) return e[lang]||e.ru; if(!note) return null; return lang==="ru"?note:null; }
-
+ 
 const TIME_LABELS = {
   "только что":{ru:"только что",uz:"hozirgina",en:"just now"},
   "вчера":{ru:"вчера",uz:"kecha",en:"yesterday"},
@@ -146,7 +146,7 @@ const TIME_LABELS = {
 };
 function timeLabel(time,lang){ const e=TIME_LABELS[time]; return (e&&(e[lang]||e.ru))||time; }
 function useT(){ const lang=useContext(LanguageContext); return (key)=>(STRINGS[lang]&&STRINGS[lang][key])||STRINGS.ru[key]||key; }
-
+ 
 const STRINGS = {
   ru: {
     appTagline:"Город чище с каждым репортом",splashTagline:"Город чище с каждым шагом",
@@ -461,7 +461,7 @@ const STRINGS = {
     statModeRatio:"% cleaned",statModeCount:"Count",
   },
 };
-
+ 
 const BIN_LOCATIONS = [
   { id:"bin-1", name:"Урна №1 — ул. Мирзо-Улугбек", pos:{top:"18%",left:"20%"} },
   { id:"bin-2", name:"Урна №2 — школьный двор", pos:{top:"75%",left:"55%"} },
@@ -484,7 +484,7 @@ function binStatus(fill,lang){
   return {color:FOREST2,label:BIN_STATUS_LABELS.available[lang]||BIN_STATUS_LABELS.available.ru};
 }
 function levelTitle(points){ if(points<50) return "levelNovice"; if(points<150) return "levelActive"; return "levelHero"; }
-
+ 
 function resizeImage(file) {
   return new Promise((resolve,reject) => {
     const reader = new FileReader();
@@ -608,7 +608,7 @@ function computeAchCtx(reports,points){
 const primaryBtnStyle={width:"100%",marginTop:14,padding:"13px 0",borderRadius:14,border:"none",background:AMBER,color:FOREST,fontWeight:700,fontSize:14,cursor:"pointer"};
 const secondaryBtnStyle={width:"100%",marginTop:8,padding:"12px 0",borderRadius:14,border:"1px solid #D7E5DC",background:"transparent",color:MUTED,fontWeight:600,fontSize:13,cursor:"pointer"};
 const navBtnStyle={display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer"};
-
+ 
 function App() {
   const [screen,setScreen]=useState("splash");
   const [points,setPoints]=useState(40);
@@ -646,7 +646,7 @@ function App() {
   const [loaded,setLoaded]=useState(false);
   const [tgViewportHeight,setTgViewportHeight]=useState(null);
   const [tgViewportWidth,setTgViewportWidth]=useState(typeof window!=="undefined"?window.innerWidth:null);
-
+ 
   useEffect(()=>{if(screen==="home"&&!myLocation){getLocation().then((loc)=>{if(loc)setMyLocation(loc);});}}, [screen,myLocation]);
   useEffect(()=>{if(screen!=="splash")return;const timer=setTimeout(()=>setSplashExiting(true),2200);return()=>clearTimeout(timer);},[screen]);
   useEffect(()=>{
@@ -690,9 +690,9 @@ function App() {
     update(); tg.onEvent&&tg.onEvent("viewportChanged",update); window.addEventListener("resize",update);
     return()=>{tg.offEvent&&tg.offEvent("viewportChanged",update);window.removeEventListener("resize",update);};
   },[]);
-
+ 
   function openCapture(){setPhotos([]);setBatchLocation(null);setAnalysis(null);setErrorMsg("");setScreen("capture");}
-
+ 
   function exportReportsCSV(){
     const genuine=reports.filter((r)=>r.category!=="повтор"&&r.category!=="предупреждение"&&r.category!=="та же точка");
     const header=["time","category","note","points","status","lat","lng"];
@@ -702,7 +702,7 @@ function App() {
     const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="ecobin_reports.csv";
     document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   }
-
+ 
   async function resetDemo(){
     setPoints(40);setReports(SEED_REPORTS);setSelectedId(null);setSelectedBinId(null);
     setBinFills(BIN_LOCATIONS.map(()=>Math.floor(Math.random()*101)));
@@ -716,7 +716,7 @@ function App() {
     setSplashExiting(false);setScreen("splash");
   }
   function markCleaned(id,afterImg){setReports((prev)=>prev.map((r)=>r.id===id?{...r,status:"cleaned",cleanedTime:"только что",afterImg:afterImg||null}:r));}
-
+ 
   const MAX_PHOTOS_PER_REPORT=4;
   async function handleFile(e){
     const file=e.target.files&&e.target.files[0]; if(!file)return;
@@ -733,7 +733,7 @@ function App() {
     const file=e.target.files&&e.target.files[0]; if(!file)return;
     try{const resized=await resizeImage(file);setAfterPhoto(resized);}catch{setAfterErrorMsg(t("photoLoadError"));}
   }
-
+ 
   // submitCleanupPhoto — использует Gemini API через глобальный callGemini
   async function submitCleanupPhoto(){
     const report=reports.find((r)=>r.id===cleaningReportId);
@@ -765,7 +765,7 @@ function App() {
       }else{setScreen("afterRejected");}
     }catch(err){setAfterErrorMsg(t("defaultErrorMsg"));setScreen("afterCapture");}
   }
-
+ 
   async function analyzePhoto(photosArray,location,lang){
     const primary=photosArray[0];
     let matchCount=0;
@@ -834,9 +834,9 @@ function App() {
     }
     return {kind:"rejected",analysis:parsed,debugSim:dupIndex||null};
   }
-
+ 
   function enqueuePhoto(photosArray,location){setPendingQueue((prev)=>[...prev,{photosArray,location}].slice(-10));}
-
+ 
   async function submitForAnalysis(){
     if(photos.length===0)return;
     if(typeof navigator!=="undefined"&&navigator.onLine===false){enqueuePhoto(photos,batchLocation);setScreen("queued");return;}
@@ -857,7 +857,7 @@ function App() {
     }
     setScreen("rejected");
   }
-
+ 
   const showTabs=screen==="home"||screen==="profile"||screen==="leaderboard"||screen==="settings";
   const t=(key)=>(STRINGS[language]&&STRINGS[language][key])||STRINGS.ru[key]||key;
   const isTelegramApp=typeof window!=="undefined"&&window.Telegram&&window.Telegram.WebApp&&!!window.Telegram.WebApp.initData;
@@ -870,7 +870,7 @@ function App() {
   const outerWrapStyle=isTelegramApp?{width:"100%",minHeight:telegramHeight,...themeCssVars}:{display:"flex",justifyContent:"center",padding:"24px 12px",fontFamily:"-apple-system, Segoe UI, Roboto, sans-serif",...themeCssVars};
   const phoneFrameStyle=isTelegramApp?{width:telegramWidthPx}:{width:380,background:"#0c1a14",borderRadius:40,padding:12,boxShadow:"0 20px 60px rgba(0,0,0,0.35)"};
   const screenBoxStyle=isTelegramApp?{width:telegramWidthPx,height:tgViewportHeight||undefined,minHeight:tgViewportHeight?undefined:telegramHeight,background:LIGHTBG,position:"relative",display:"flex",flexDirection:"column"}:{width:"100%",height:740,background:LIGHTBG,borderRadius:30,overflow:"hidden",position:"relative",display:"flex",flexDirection:"column"};
-
+ 
   return (
     <LanguageContext.Provider value={language}>
     <div style={outerWrapStyle}>
@@ -927,7 +927,7 @@ function App() {
     </LanguageContext.Provider>
   );
 }
-
+ 
 function SplashScreen({exiting}){
   const t=useT();
   return (
@@ -1102,7 +1102,7 @@ function ReportTimeline({report,isCleaned}){
     </div>
   );
 }
-
+ 
 function DashboardScreen({reports,binFills,binDevices,onBack}){
   const t=useT();const lang=useLang();const [mapMode,setMapMode]=useState("heatmap");
   const genuine=reports.filter((r)=>r.category!=="повтор"&&r.category!=="предупреждение"&&r.category!=="та же точка");
@@ -1171,20 +1171,20 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme}){
   return (
     <div style={{paddingBottom:24,minHeight:"100%",background:LIGHTBG}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}><button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><ChevronLeft size={22} color={TEXTDARK}/></button><p style={{margin:0,fontWeight:700,fontSize:16,color:TEXTDARK}}>{t("navSettings")}</p></div>
-
+ 
       {sectionLabel(t("language"))}
       <div style={{display:"flex",gap:6,background:CARD,borderRadius:12,padding:4}}>{[{code:"ru",label:"RU"},{code:"uz",label:"UZ"},{code:"en",label:"EN"}].map((l)=>(<button key={l.code} onClick={()=>onSetLanguage(l.code)} style={{flex:1,padding:"7px 0",borderRadius:9,border:"none",cursor:"pointer",background:language===l.code?WHITE:"transparent",color:language===l.code?FOREST:MUTED,fontWeight:700,fontSize:12.5,boxShadow:language===l.code?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{l.label}</button>))}</div>
-
+ 
       {sectionLabel(t("appearanceTitle"))}
       <div style={{display:"flex",gap:6,background:CARD,borderRadius:12,padding:4}}>{[{code:"light",label:t("themeLight")},{code:"dark",label:t("themeDark")}].map((opt)=>(<button key={opt.code} onClick={()=>onSetTheme(opt.code)} style={{flex:1,padding:"7px 0",borderRadius:9,border:"none",cursor:"pointer",background:theme===opt.code?WHITE:"transparent",color:theme===opt.code?FOREST:MUTED,fontWeight:700,fontSize:12.5,boxShadow:theme===opt.code?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{opt.label}</button>))}</div>
-
+ 
       {sectionLabel("Мой район")}
       <button onClick={()=>setShowDistrictPicker(!showDistrictPicker)} style={{width:"100%",background:CARD,borderRadius:12,padding:"11px 14px",border:"none",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontSize:13,fontWeight:600,color:TEXTDARK}}>{districtLabel}</span>
         <ChevronLeft size={16} color={MUTED} style={{transform:"rotate(-90deg)"}}/>
       </button>
       {showDistrictPicker&&(<div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,marginTop:4,overflow:"hidden"}}>{districts.map((d)=>(<button key={d.code} onClick={()=>{setDistrict(d.code);setShowDistrictPicker(false);}} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${CARD}`,background:district===d.code?CARD:WHITE,cursor:"pointer",textAlign:"left",fontSize:13,color:district===d.code?FOREST:TEXTDARK,fontWeight:district===d.code?700:400}}>{d.label}</button>))}</div>)}
-
+ 
       {sectionLabel("Уведомления")}
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,overflow:"hidden"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderBottom:`1px solid ${CARD}`}}>
@@ -1196,14 +1196,14 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme}){
           <Toggle value={notifSound} onChange={setNotifSound}/>
         </div>
       </div>
-
+ 
       {sectionLabel("EcoBin устройство")}
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:42,height:42,borderRadius:11,background:CARD,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Trash2 size={20} color={FOREST}/></div>
         <div style={{flex:1}}><p style={{margin:0,fontSize:13,fontWeight:600,color:TEXTDARK}}>Подключить умную урну</p><p style={{margin:"2px 0 0",fontSize:11,color:MUTED}}>Сканировать QR-код устройства</p></div>
         <div style={{width:36,height:36,borderRadius:9,background:FOREST,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Plus size={18} color={WHITE}/></div>
       </div>
-
+ 
       {sectionLabel("О приложении")}
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
@@ -1232,7 +1232,7 @@ function ProfileScreen({points,reports,onReset,onExport}){
     </div>
   );
 }
-
+ 
 function CaptureScreen({photos,onBack,onPickCamera,onRemove,onSubmit,errorMsg,maxPhotos}){
   const t=useT();const remaining=maxPhotos-photos.length;
   return (
@@ -1408,9 +1408,10 @@ function ErrorScreen({msg,onRetry,onNewPhoto,onCancel}){
     </div>
   );
 }
-
+ 
 const root=ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App/>);
 </script>
 </body>
 </html>
+ 
