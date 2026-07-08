@@ -9,8 +9,8 @@
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <style>
-html, body { margin: 0; padding: 0; background: #F6FAF7; overflow-x: hidden; width: 100%; }
-#root { min-height: 100vh; width: 100%; overflow-x: hidden; }
+html, body { margin: 0; padding: 0; background: #F6FAF7; overflow: hidden; width: 100vw; max-width: 100vw; }
+#root { min-height: 100vh; width: 100vw; max-width: 100vw; overflow-x: hidden; }
 #error-screen { display: none; padding: 20px; font-family: sans-serif; color: #c1440e; background: #fff; }
 </style>
 </head>
@@ -90,8 +90,8 @@ const Settings=makeIcon([h("circle",{key:1,cx:12,cy:12,r:3}),h("path",{key:2,d:"
 <script type="text/babel" data-presets="react">
 const { useState, useRef, useEffect, createContext, useContext } = React;
 
-const GEMINI_KEY = "AQ.Ab8RN6IzdgnzhPq_pr5O0qAS_WcHpj9z_j_GayOT4YdxBpcTow";
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEMINI_KEY = ""; // ключ хранится в Cloudflare Worker
+const GEMINI_URL = "https://ecobin-proxy.uk4203406.workers.dev"; // Cloudflare Worker прокси
 
 const FOREST = "var(--ecobin-forest, #1B4332)";
 const FOREST2 = "var(--ecobin-forest2, #2D6A4F)";
@@ -557,7 +557,7 @@ async function callGemini(parts,timeoutMs=45000){
   const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error("Timeout: превышено время ожидания")),timeoutMs));
   const fetchPromise=fetch(GEMINI_URL,{
     method:"POST",
-    headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_KEY},
+    headers:{"Content-Type":"application/json"},
     body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1,maxOutputTokens:300}}),
   });
   const resp=await Promise.race([fetchPromise,timeoutPromise]);
