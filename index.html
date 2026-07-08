@@ -543,13 +543,7 @@ function getFraudTiers(lang){
   return [{points:0,title:tt("fraudWarningTitle"),note:tt("fraudWarningNote")},{points:10,title:tt("fraudFine10Title"),note:tt("fraudFine10Note")},{points:30,title:tt("fraudFine30Title"),note:tt("fraudFine30Note")}];
 }
 function mockGeminiResponse(){
-  if(Math.random()<0.3){
-    const n=["На фото не видно мусора в общественном месте","Место выглядит чистым, мусор не обнаружен","На снимке нет признаков загрязнения улицы","Сфотографируй мусор на улице крупнее"];
-    return {content:[{type:"text",text:JSON.stringify({is_trash:false,severity:0,category:null,note:n[Math.floor(Math.random()*n.length)],duplicate_of:null})}]};
-  }
-  const t=[{category:"пластик",note:"Пластиковые бутылки у дороги",severity:3},{category:"алюминий",note:"Алюминиевые банки рядом с урной",severity:2},{category:"картон",note:"Картонные коробки брошены у подъезда",severity:2},{category:"стекло",note:"Стеклянные бутылки на газоне",severity:3},{category:"смешанный",note:"Смешанный мусор рядом с контейнером",severity:4},{category:"органика",note:"Пищевые отходы на тротуаре",severity:3},{category:"стройотходы",note:"Строительный мусор оставлен у обочины",severity:4},{category:"листва",note:"Куча листвы и веток на тротуаре",severity:2},{category:"смешанный",note:"Мусор рассыпан у переполненного контейнера",severity:5}];
-  const item=t[Math.floor(Math.random()*t.length)];
-  return {content:[{type:"text",text:JSON.stringify({is_trash:true,severity:item.severity,category:item.category,note:item.note,duplicate_of:null})}]};
+  return {content:[{type:"text",text:JSON.stringify({is_trash:false,severity:0,category:null,note:"Нет связи с AI",duplicate_of:null})}]};
 }
 function mockGeminiCleanResponse(){
   const n=["Место убрано, мусора не видно","Территория чистая","Мусор убран успешно"];
@@ -560,44 +554,35 @@ function dataUrlToParts(dataUrl){
   if(!m) return null; return {mediaType:m[1],base64:m[2]};
 }
 async function callGemini(parts,timeoutMs=45000){
-  const controller=new AbortController();
-  const timeoutId=setTimeout(()=>controller.abort(),timeoutMs);
-  try {
-    const resp=await fetch(GEMINI_URL,{
-      method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_KEY},signal:controller.signal,
-      body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1,maxOutputTokens:300}}),
-    });
-    clearTimeout(timeoutId);
-    const json=await resp.json();
-    if(!resp.ok||json.error) throw new Error(json?.error?.message||"Gemini API error");
-    const text=json?.candidates?.[0]?.content?.parts?.[0]?.text||"";
-    return {content:[{type:"text",text}]};
-  } catch(err){clearTimeout(timeoutId);throw err;}
+  const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error("Timeout: превышено время ожидания")),timeoutMs));
+  const fetchPromise=fetch(GEMINI_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_KEY},
+    body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1,maxOutputTokens:300}}),
+  });
+  const resp=await Promise.race([fetchPromise,timeoutPromise]);
+  const json=await resp.json();
+  if(!resp.ok||json.error) throw new Error(json?.error?.message||"Gemini API error "+resp.status);
+  const text=json?.candidates?.[0]?.content?.parts?.[0]?.text||"";
+  return {content:[{type:"text",text}]};
 }
 function buildPrompt(numPhotos,numCandidates){
-  let text=`Ты — строгий AI-модуль проверки фотографий для городского эко-приложения в Узбекистане.\n\n`;
+  let text=`Ты — строгий AI-модуль проверки фотографий для эко-приложения Узбекистана.\n\n`;
   if(numPhotos>1) text+=`Получены ${numPhotos} фото одной заявки (разные ракурсы одного места). Оценивай как единый случай.\n`;
   else text+=`Получено одно фото для проверки.\n`;
-  if(numCandidates>0) text+=`Дополнительно: ${numCandidates} фото существующих заявок (Эталон 1..${numCandidates}) для сравнения.\n`;
-  text+=`\n═══ ПРАВИЛА ПРОВЕРКИ ═══\n`;
-  text+=`\nПРАВИЛО 0 — ФОРМАТ ИЗОБРАЖЕНИЯ (проверяй ПЕРВЫМ):\n`;
-  text+=`Если на фото: интерфейс приложения, скриншот телефона, экран монитора, рисунок, иллюстрация, макет, текст на белом фоне, цифровая графика — НЕМЕДЛЕННО верни is_trash:false, note:"не реальное фото улицы".\n`;
-  text+=`\nПРАВИЛО 1 — ЭТО МУСОР НА УЛИЦЕ?\n`;
-  text+=`ПРИНЯТЬ: на фото РЕАЛЬНО виден мусор или отходы в открытом/общественном месте — тротуар, двор, газон, дорога, парковка, у контейнера, у подъезда.\n`;
-  text+=`ОТКЛОНИТЬ: съёмка внутри помещения; чистое место без мусора; только люди, деревья, здания без мусора; еда, посуда, личные вещи; невозможно определить место съёмки.\n`;
-  text+=`\nПРАВИЛО 2 — УРОВЕНЬ СЕРЬЁЗНОСТИ (severity):\n`;
-  text+=`Оценивай ТОЛЬКО то что РЕАЛЬНО видно на фото:\n`;
-  text+=`1 = 1-2 небольших предмета (бутылка, пакет, бумага)\n`;
-  text+=`2 = несколько предметов или небольшая кучка мусора\n`;
-  text+=`3 = явная куча или заметное загрязнение площади\n`;
-  text+=`4 = много мусора, большая куча, переполненный контейнер\n`;
-  text+=`5 = огромная стихийная свалка, критическое загрязнение\n`;
-  text+=`\nПРАВИЛО 3 — КАТЕГОРИЯ:\n`;
-  text+=`Опиши РЕАЛЬНОЕ содержимое мусора одним словом по-русски — исходя из того что ВИДНО на фото, не угадывай. Примеры: пластик, стекло, листва, ветки, смешанный, строительный, металл, картон, органика.\n`;
-  if(numCandidates>0) text+=`\nПРАВИЛО 4 — ДУБЛИКАТ:\nСравни с каждым эталоном по конкретным предметам и фону. Если это то же место/куча — укажи номер эталона.\n`;
-  text+=`\n═══ ОТВЕТ ═══\nСтрого один JSON без markdown и пояснений:\n`;
-  text+=`{"is_trash": true или false, "severity": число 1-5, "category": одно слово по-русски что РЕАЛЬНО видно, "note": что конкретно видно на фото, 6-8 слов по-русски`;
-  if(numCandidates>0) text+=`, "duplicate_of": номер эталона или null`;
+  if(numCandidates>0) text+=`Также прикреплены ${numCandidates} фото существующих заявок (Эталон 1..${numCandidates}).\n`;
+  text+=`\nПРАВИЛО 0 — ПРОВЕРЬ ФОРМАТ ПЕРВЫМ:\n`;
+  text+=`Это реальная фотография реального места, снятая камерой телефона? Если НЕТ — скриншот, график, диаграмма, интерфейс приложения, фото монитора/экрана, рисунок, схема, цифровой контент — немедленно верни is_trash:false.\n`;
+  text+=`\nПРАВИЛО 1 — ЕСТЬ ЛИ МУСОР?\n`;
+  text+=`ПРИНЯТЬ (is_trash:true): чётко виден мусор на улице, во дворе, на газоне, у дороги, у контейнера, у подъезда.\n`;
+  text+=`ОТКЛОНИТЬ (is_trash:false): съёмка внутри помещения; чистое место; только люди/деревья/здания без мусора; растения, еда, личные вещи.\n`;
+  text+=`\nПРАВИЛО 2 — УРОВЕНЬ (severity, только если is_trash:true):\n`;
+  text+=`1=1-2 небольших предмета; 2=несколько предметов/небольшая кучка; 3=явная куча мусора; 4=много мусора или переполненный контейнер; 5=огромная стихийная свалка.\n`;
+  text+=`\nПРАВИЛО 3 — КАТЕГОРИЯ: опиши что РЕАЛЬНО видно одним словом (пластик, стекло, листва, ветки, смешанный, строительный, металл, картон, органика).\n`;
+  if(numCandidates>0) text+=`\nПРАВИЛО 4 — ДУБЛИКАТ: сравни с эталонами по конкретным предметам и фону. Одинаковое место — укажи номер.\n`;
+  text+=`\nОтвет — строго один JSON без markdown:\n`;
+  text+=`{"is_trash":true/false,"severity":1-5,"category":"одно слово","note":"что конкретно видно, 6-8 слов по-русски"`;
+  if(numCandidates>0) text+=`,"duplicate_of":номер или null`;
   text+=`}`;
   return text;
 }
@@ -815,7 +800,7 @@ function App() {
       candidatesForCall.forEach((r,i)=>{const cp=dataUrlToParts(r.img);if(cp){parts.push({text:`Эталон ${i+1}:`});parts.push({inline_data:{mime_type:cp.mediaType,data:cp.base64}});}});
       parts.push({text:buildPrompt(photosArray.length,candidatesForCall.length)});
       try{return await callGemini(parts,timeoutMs);}
-      catch(networkErr){if(networkErr.name==="AbortError")throw networkErr;return mockGeminiResponse();}
+      catch(networkErr){if(networkErr.name==="AbortError")throw networkErr;console.error("Gemini error:",networkErr.message||networkErr);throw networkErr;}
     }
     let data,usedCandidates=allCandidates;
     try{data=await callAI(allCandidates,45000);}
@@ -900,7 +885,7 @@ function App() {
               </div>
             </div>
           )}
-          <div style={{flex:1,overflowY:"auto",padding:screen==="splash"?0:"8px 18px 0"}}>
+          <div style={{flex:1,overflowY:"auto",padding:screen==="splash"?0:"8px 18px 0",...(fontScale!==1?{transform:`scale(${fontScale})`,transformOrigin:"top center",width:`${100/fontScale}%`,minHeight:0}:{})}}>
             {screen==="splash"&&<SplashScreen exiting={splashExiting}/>}
             {screen==="language-select"&&<LanguageSelectScreen onSelect={(code)=>{setLanguage(code);setScreen("onboarding");}}/>}
             {screen==="onboarding"&&<OnboardingScreen onDone={finishOnboarding}/>}
