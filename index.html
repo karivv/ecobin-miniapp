@@ -575,15 +575,30 @@ async function callGemini(parts,timeoutMs=45000){
   } catch(err){clearTimeout(timeoutId);throw err;}
 }
 function buildPrompt(numPhotos,numCandidates){
-  let text=`Ты — модуль проверки фотографий для приложения по уборке города в Узбекистане.\n`;
-  if(numPhotos>1) text+=`Тебе показаны ${numPhotos} фото ("Фото 1".."Фото ${numPhotos}") — это ОДНА И ТА ЖЕ заявка, разные ракурсы одного и того же места/мусора, снятые одним человеком только что. Оцени их как единый случай, а не как разные.`;
-  else text+=`Тебе показано НОВОЕ фото, которое нужно проверить.`;
-  if(numCandidates>0) text+=` После них идут ${numCandidates} фото уже существующих активных заявок, помеченных как "Эталон 1", "Эталон 2" и так далее — это места, которые уже отмечены на карте и ждут уборки.`;
-  text+=`\n\nСначала определи: видно ли на новых фото скопление мусора или бытовых отходов в общественном месте (улица, двор, газон, контейнер, обочина и т.п.).`;
-  if(numCandidates>0) text+=`\n\nЗатем сравни новые фото с каждым эталоном: может ли это быть ТА ЖЕ САМАЯ физическая куча мусора / то же самое место, просто снятое под другим углом, при другом освещении или кадрировании? Смотри на характерные предметы, текстуры, фон — не только на общее сходство.`;
-  text+=`\n\nОтветь СТРОГО в виде одного JSON-объекта, без markdown и без пояснений вокруг:\n{"is_trash": true или false, "severity": число от 1 до 5, "category": одно слово НА РУССКОМ языке (например: пластик, смешанный, органика, стройотходы, листва), "note": короткий комментарий НА РУССКОМ языке, не больше 10 слов`;
-  if(numCandidates>0) text+=`, "duplicate_of": номер эталона (1${numCandidates>1?`, 2, ... до ${numCandidates}`:""}), если это то же место/куча мусора, иначе null`;
-  text+=`}\nЕсли на фото нет мусора, или это явно не общественное место, верни is_trash:false и кратко объясни почему в note.`;
+  let text=`Ты — строгий AI-модуль проверки фотографий для городского эко-приложения в Узбекистане.\n\n`;
+  if(numPhotos>1) text+=`Получены ${numPhotos} фото одной заявки (разные ракурсы одного места). Оценивай как единый случай.\n`;
+  else text+=`Получено одно фото для проверки.\n`;
+  if(numCandidates>0) text+=`Дополнительно: ${numCandidates} фото существующих заявок (Эталон 1..${numCandidates}) для сравнения.\n`;
+  text+=`\n═══ ПРАВИЛА ПРОВЕРКИ ═══\n`;
+  text+=`\nПРАВИЛО 0 — ФОРМАТ ИЗОБРАЖЕНИЯ (проверяй ПЕРВЫМ):\n`;
+  text+=`Если на фото: интерфейс приложения, скриншот телефона, экран монитора, рисунок, иллюстрация, макет, текст на белом фоне, цифровая графика — НЕМЕДЛЕННО верни is_trash:false, note:"не реальное фото улицы".\n`;
+  text+=`\nПРАВИЛО 1 — ЭТО МУСОР НА УЛИЦЕ?\n`;
+  text+=`ПРИНЯТЬ: на фото РЕАЛЬНО виден мусор или отходы в открытом/общественном месте — тротуар, двор, газон, дорога, парковка, у контейнера, у подъезда.\n`;
+  text+=`ОТКЛОНИТЬ: съёмка внутри помещения; чистое место без мусора; только люди, деревья, здания без мусора; еда, посуда, личные вещи; невозможно определить место съёмки.\n`;
+  text+=`\nПРАВИЛО 2 — УРОВЕНЬ СЕРЬЁЗНОСТИ (severity):\n`;
+  text+=`Оценивай ТОЛЬКО то что РЕАЛЬНО видно на фото:\n`;
+  text+=`1 = 1-2 небольших предмета (бутылка, пакет, бумага)\n`;
+  text+=`2 = несколько предметов или небольшая кучка мусора\n`;
+  text+=`3 = явная куча или заметное загрязнение площади\n`;
+  text+=`4 = много мусора, большая куча, переполненный контейнер\n`;
+  text+=`5 = огромная стихийная свалка, критическое загрязнение\n`;
+  text+=`\nПРАВИЛО 3 — КАТЕГОРИЯ:\n`;
+  text+=`Опиши РЕАЛЬНОЕ содержимое мусора одним словом по-русски — исходя из того что ВИДНО на фото, не угадывай. Примеры: пластик, стекло, листва, ветки, смешанный, строительный, металл, картон, органика.\n`;
+  if(numCandidates>0) text+=`\nПРАВИЛО 4 — ДУБЛИКАТ:\nСравни с каждым эталоном по конкретным предметам и фону. Если это то же место/куча — укажи номер эталона.\n`;
+  text+=`\n═══ ОТВЕТ ═══\nСтрого один JSON без markdown и пояснений:\n`;
+  text+=`{"is_trash": true или false, "severity": число 1-5, "category": одно слово по-русски что РЕАЛЬНО видно, "note": что конкретно видно на фото, 6-8 слов по-русски`;
+  if(numCandidates>0) text+=`, "duplicate_of": номер эталона или null`;
+  text+=`}`;
   return text;
 }
 const ACHIEVEMENTS=[
@@ -1085,7 +1100,7 @@ function ReportDetailSheet({report,onClose,onStartCleanup,onMarkCleanedNoPhoto})
       <p style={{margin:"10px 0 0",fontSize:13,fontWeight:700,color:FOREST}}>+{report.points} {t("pointsToResident")}</p>
       <ReportTimeline report={report} isCleaned={isCleaned}/>
       {!isCleaned&&<button onClick={()=>onStartCleanup(report.id)} style={primaryBtnStyle}>{t("markCleanedBtn")}</button>}
-      {!isCleaned&&<button onClick={()=>onMarkCleanedNoPhoto(report.id)} style={secondaryBtnStyle}>{t("markCleanedNoPhoto")}</button>}
+      {!isCleaned&&<button onClick={()=>{try{if(localStorage.getItem("ecobin_notif_sound")!=="false")playSuccessTone();}catch{}onMarkCleanedNoPhoto(report.id);}} style={secondaryBtnStyle}>{t("markCleanedNoPhoto")}</button>}
       <button onClick={onClose} style={secondaryBtnStyle}>{t("close")}</button>
     </div></>
   );
@@ -1151,8 +1166,8 @@ function LeaderboardScreen({reports}){
     <div style={{paddingBottom:12}}>
       <p style={{fontSize:18,fontWeight:700,color:TEXTDARK,margin:"6px 0 2px",fontFamily:"Georgia, serif"}}>{t("ratingTitle")}</p>
       <p style={{fontSize:11.5,color:MUTED,margin:"0 0 12px"}}>{t("ratingSubtitle")}</p>
-      <div style={{display:"flex",gap:6,marginBottom:8,background:CARD,borderRadius:12,padding:4}}><button onClick={()=>setTab("districts")} style={{flex:1,padding:"7px 0",borderRadius:9,border:"none",cursor:"pointer",background:tab==="districts"?WHITE:"transparent",color:tab==="districts"?FOREST:MUTED,fontWeight:700,fontSize:12.5,boxShadow:tab==="districts"?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{t("ratingDistricts")}</button><button onClick={()=>setTab("cities")} style={{flex:1,padding:"7px 0",borderRadius:9,border:"none",cursor:"pointer",background:tab==="cities"?WHITE:"transparent",color:tab==="cities"?FOREST:MUTED,fontWeight:700,fontSize:12.5,boxShadow:tab==="cities"?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{t("ratingCities")}</button></div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}><div style={{display:"flex",gap:4,background:CARD,borderRadius:9,padding:3}}><button onClick={()=>setStatMode("ratio")} style={{padding:"4px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:9.5,fontWeight:700,background:statMode==="ratio"?WHITE:"transparent",color:statMode==="ratio"?FOREST:MUTED}}>{t("statModeRatio")}</button><button onClick={()=>setStatMode("count")} style={{padding:"4px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:9.5,fontWeight:700,background:statMode==="count"?WHITE:"transparent",color:statMode==="count"?FOREST:MUTED}}>{t("statModeCount")}</button></div></div>
+      <div style={{display:"flex",gap:6,marginBottom:8,background:CARD,borderRadius:12,padding:4}}><button onClick={()=>setTab("districts")} style={{flex:1,padding:"7px 0",borderRadius:9,border:"none",cursor:"pointer",background:tab==="districts"?FOREST:"transparent",color:tab==="districts"?"#FFFFFF":MUTED,fontWeight:700,fontSize:12.5}}>{t("ratingDistricts")}</button><button onClick={()=>setTab("cities")} style={{flex:1,padding:"7px 0",borderRadius:9,border:"none",cursor:"pointer",background:tab==="cities"?FOREST:"transparent",color:tab==="cities"?"#FFFFFF":MUTED,fontWeight:700,fontSize:12.5}}>{t("ratingCities")}</button></div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}><div style={{display:"flex",gap:4,background:CARD,borderRadius:9,padding:3}}><button onClick={()=>setStatMode("ratio")} style={{padding:"4px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:9.5,fontWeight:700,background:statMode==="ratio"?FOREST:"transparent",color:statMode==="ratio"?"#FFFFFF":MUTED}}>{t("statModeRatio")}</button><button onClick={()=>setStatMode("count")} style={{padding:"4px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:9.5,fontWeight:700,background:statMode==="count"?FOREST:"transparent",color:statMode==="count"?"#FFFFFF":MUTED}}>{t("statModeCount")}</button></div></div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>{data.map((d,i)=>{const pct=d.total>0?Math.round((d.completed/d.total)*100):0;const barPct=statMode==="ratio"?pct:Math.round((d.completed/maxCompleted)*100);return(<div key={d.name} style={{background:d.isYou?CARD:WHITE,border:d.isYou?`1px solid ${FOREST2}`:`1px solid ${CARD}`,borderRadius:14,padding:"10px 14px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13,fontWeight:700,color:TEXTDARK}}>{medals[i]||`${i+1}.`} {d.name}</span><span style={{fontSize:13,fontWeight:700,color:FOREST}}>{statMode==="ratio"?`${pct}%`:d.completed}</span></div><p style={{margin:"2px 0 0",fontSize:10.5,color:MUTED}}>{d.completed} {t("completedOfTotal").replace("{total}",d.total)}</p><div style={{marginTop:6,height:6,borderRadius:3,background:"#EAF4EE",overflow:"hidden"}}><div style={{width:`${barPct}%`,height:"100%",background:d.isYou?AMBER:FOREST2}}/></div></div>);})}</div>
       <p style={{fontSize:11,color:MUTED,marginTop:16,textAlign:"center"}}>{t("ratingFooter")}</p>
     </div>
@@ -1160,10 +1175,13 @@ function LeaderboardScreen({reports}){
 }
 function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme}){
   const t=useT();
-  const [district,setDistrict]=useState("mirzo-ulugbek");
-  const [notifCleaned,setNotifCleaned]=useState(true);
-  const [notifSound,setNotifSound]=useState(false);
+  const [district,setDistrict]=useState(()=>{try{return localStorage.getItem("ecobin_district")||"mirzo-ulugbek";}catch{return "mirzo-ulugbek";}});
+  const [notifCleaned,setNotifCleaned]=useState(()=>{try{return localStorage.getItem("ecobin_notif_cleaned")!=="false";}catch{return true;}});
+  const [notifSound,setNotifSound]=useState(()=>{try{return localStorage.getItem("ecobin_notif_sound")==="true";}catch{return false;}});
   const [showDistrictPicker,setShowDistrictPicker]=useState(false);
+  useEffect(()=>{try{localStorage.setItem("ecobin_notif_cleaned",notifCleaned);}catch{}},[notifCleaned]);
+  useEffect(()=>{try{localStorage.setItem("ecobin_notif_sound",notifSound);}catch{}},[notifSound]);
+  useEffect(()=>{try{localStorage.setItem("ecobin_district",district);}catch{}},[district]);
   const districts=[{code:"mirzo-ulugbek",label:t("districtMirzoUlugbek")},{code:"mirobod",label:t("districtMirobod")},{code:"yunusobod",label:t("districtYunusobod")},{code:"chilonzor",label:t("districtChilonzor")},{code:"yakkasaray",label:t("districtYakkasaray")},{code:"bektemir",label:t("districtBektemir")},{code:"sergeli",label:t("districtSergeli")},{code:"shaykhantakhur",label:t("districtShaykhantakhur")},{code:"uchtepa",label:t("districtUchtepa")},{code:"almazor",label:t("districtAlmazor")},{code:"yashnobod",label:t("districtYashnobod")}];
   const districtLabel=districts.find((d)=>d.code===district)?.label||t("districtMirzoUlugbek");
   const sectionLabel=(text)=>(<p style={{fontSize:11,fontWeight:700,color:MUTED,margin:"18px 0 6px",textTransform:"uppercase",letterSpacing:0.5}}>{text}</p>);
@@ -1272,7 +1290,7 @@ function playSuccessTone(){
 }
 function ResultScreen({analysis,photos,badgeUnlocked,newAchievements,debugSim,onDone}){
   const t=useT();const lang=useLang();const [copied,setCopied]=useState(false);const [showDebug,setShowDebug]=useState(false);
-  useEffect(()=>{playSuccessTone();},[]);
+  useEffect(()=>{try{if(localStorage.getItem("ecobin_notif_sound")!=="false")playSuccessTone();}catch{}},[]);
   const pts=analysis?(analysis.severity||3)*10:30;const shareMsg=t("shareText").replace("{pts}",pts);
   function handleShare(){if(navigator.share){navigator.share({text:shareMsg}).catch(()=>{});}else{navigator.clipboard.writeText(shareMsg).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000)}).catch(()=>{});}}
   return (
@@ -1356,7 +1374,7 @@ function AfterAnalyzingScreen({photo}){
   );
 }
 function AfterSuccessScreen({report,photo,analysis,newAchievements,onDone}){
-  const t=useT();useEffect(()=>{playSuccessTone();},[]);
+  const t=useT();useEffect(()=>{try{if(localStorage.getItem("ecobin_notif_sound")!=="false")playSuccessTone();}catch{}},[]);
   return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 0 12px",gap:12,textAlign:"center"}}>
       {report&&photo&&(<div style={{display:"flex",gap:6,width:"100%"}}><div style={{flex:1}}>{report.img&&<img src={report.img} alt="" style={{width:"100%",height:120,objectFit:"cover",borderRadius:12}}/>}<p style={{textAlign:"center",fontSize:9,color:MUTED,margin:"3px 0 0"}}>{t("beforeLabel")}</p></div><div style={{flex:1}}><img src={photo.dataUrl} alt="" style={{width:"100%",height:120,objectFit:"cover",borderRadius:12}}/><p style={{textAlign:"center",fontSize:9,color:FOREST2,fontWeight:700,margin:"3px 0 0"}}>{t("afterLabel")}</p></div></div>)}
