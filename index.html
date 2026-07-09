@@ -879,9 +879,9 @@ function App() {
   const themeCssVars={"--ecobin-forest":palette.forest,"--ecobin-forest2":palette.forest2,"--ecobin-amber":palette.amber,"--ecobin-lightbg":palette.lightbg,"--ecobin-card":palette.card,"--ecobin-textdark":palette.textdark,"--ecobin-muted":palette.muted,"--ecobin-red":palette.red,"--ecobin-white":palette.white};
   const telegramHeight=tgViewportHeight?`${tgViewportHeight}px`:"100vh";
   const telegramWidthPx=tgViewportWidth||(typeof window!=="undefined"?window.innerWidth:380);
-  const outerWrapStyle=isTelegramApp?{width:"100%",minHeight:telegramHeight,overflowX:"hidden",...themeCssVars}:{display:"flex",justifyContent:"center",padding:"24px 12px",fontFamily:"-apple-system, Segoe UI, Roboto, sans-serif",...themeCssVars};
-  const phoneFrameStyle=isTelegramApp?{width:"100%",overflowX:"hidden"}:{width:380,background:"#0c1a14",borderRadius:40,padding:12,boxShadow:"0 20px 60px rgba(0,0,0,0.35)"};
-  const screenBoxStyle=isTelegramApp?{width:"100%",height:tgViewportHeight||undefined,minHeight:tgViewportHeight?undefined:telegramHeight,background:LIGHTBG,position:"relative",display:"flex",flexDirection:"column",overflowX:"hidden"}:{width:"100%",height:740,background:LIGHTBG,borderRadius:30,overflow:"hidden",position:"relative",display:"flex",flexDirection:"column"};
+  const outerWrapStyle=isTelegramApp?{width:"100vw",maxWidth:"100vw",minHeight:telegramHeight,overflowX:"hidden",boxSizing:"border-box",margin:0,padding:0,...themeCssVars}:{display:"flex",justifyContent:"center",padding:"24px 12px",fontFamily:"-apple-system, Segoe UI, Roboto, sans-serif",...themeCssVars};
+  const phoneFrameStyle=isTelegramApp?{width:"100vw",maxWidth:"100vw",overflowX:"hidden",boxSizing:"border-box",margin:0,padding:0}:{width:380,background:"#0c1a14",borderRadius:40,padding:12,boxShadow:"0 20px 60px rgba(0,0,0,0.35)"};
+  const screenBoxStyle=isTelegramApp?{width:"100vw",maxWidth:"100vw",height:tgViewportHeight||undefined,minHeight:tgViewportHeight?undefined:telegramHeight,background:LIGHTBG,position:"relative",display:"flex",flexDirection:"column",overflowX:"hidden",boxSizing:"border-box",margin:0}:{width:"100%",height:740,background:LIGHTBG,borderRadius:30,overflow:"hidden",position:"relative",display:"flex",flexDirection:"column"};
 
   return (
     <LanguageContext.Provider value={language}>
@@ -897,7 +897,7 @@ function App() {
               </div>
             </div>
           )}
-          <div style={{flex:1,overflowY:"auto",padding:screen==="splash"?0:"8px 18px 0",...(fontScale!==1?{transform:`scale(${fontScale})`,transformOrigin:"top center",width:`${100/fontScale}%`,minHeight:0}:{})}}>
+          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:screen==="splash"?0:"8px 18px 0",boxSizing:"border-box",width:"100%",maxWidth:"100%"}}>
             {screen==="splash"&&<SplashScreen exiting={splashExiting}/>}
             {screen==="language-select"&&<LanguageSelectScreen onSelect={(code)=>{setLanguage(code);setScreen("onboarding");}}/>}
             {screen==="onboarding"&&<OnboardingScreen onDone={finishOnboarding}/>}
