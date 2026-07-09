@@ -554,16 +554,28 @@ function dataUrlToParts(dataUrl){
   if(!m) return null; return {mediaType:m[1],base64:m[2]};
 }
 async function callGemini(parts,timeoutMs=45000){
+  // Конвертируем parts (Gemini-формат) в формат OpenAI
+  const openaiContent=parts.map((p)=>{
+    if(p.text!==undefined) return {type:"text",text:p.text};
+    if(p.inline_data) return {type:"image_url",image_url:{url:"data:"+p.inline_data.mime_type+";base64,"+p.inline_data.data}};
+    return null;
+  }).filter(Boolean);
+  const requestBody={
+    model:"gpt-4o-mini",
+    messages:[{role:"user",content:openaiContent}],
+    temperature:0.1,
+    max_tokens:300,
+  };
   const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error("Timeout: превышено время ожидания")),timeoutMs));
   const fetchPromise=fetch(GEMINI_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1,maxOutputTokens:300}}),
+    body:JSON.stringify(requestBody),
   });
   const resp=await Promise.race([fetchPromise,timeoutPromise]);
   const json=await resp.json();
-  if(!resp.ok||json.error) throw new Error(json?.error?.message||"Gemini API error "+resp.status);
-  const text=json?.candidates?.[0]?.content?.parts?.[0]?.text||"";
+  if(!resp.ok||json.error) throw new Error(json?.error?.message||"OpenAI API error "+resp.status);
+  const text=json?.choices?.[0]?.message?.content||"";
   return {content:[{type:"text",text}]};
 }
 function buildPrompt(numPhotos,numCandidates){
