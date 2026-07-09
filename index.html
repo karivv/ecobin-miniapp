@@ -783,11 +783,13 @@ function App() {
     let matchCount=0;
     photosArray.forEach((p)=>{
       if(!p.fingerprint)return;
+      // Считаем сколько раз это фото уже встречалось (включая оригинал, повторы и предупреждения)
       const c=reportsRef.current.filter((r)=>r.fingerprint&&fingerprintDiff(r.fingerprint,p.fingerprint)<DUPLICATE_THRESHOLD).length;
       if(c>matchCount)matchCount=c;
     });
     if(matchCount>0){
       const tiers=getFraudTiers(lang);
+      // matchCount=1 → 1-е нарушение (предупреждение), 2 → штраф 10, 3+ → штраф 30
       const tier=tiers[Math.min(matchCount-1,tiers.length-1)];
       idCounter.current+=1;
       const flaggedReport={id:"r-"+idCounter.current,category:tier.points===0?"предупреждение":"повтор",severity:null,note:tier.note,points:-tier.points,time:"только что",img:primary.dataUrl,fingerprint:primary.fingerprint,location:location||null,pos:{top:30+Math.random()*40+"%",left:20+Math.random()*55+"%"}};
@@ -802,7 +804,8 @@ function App() {
       setReports((prev)=>[sameSpotReport,...prev].slice(0,15));
       return {kind:"samespot",analysis:null,matched:geoMatch,viaHistogram:false,debugSim:"geo"};
     }
-    const allCandidates=[];
+    // Собираем активные заявки с фото как эталоны для сравнения ракурсов
+    const allCandidates=reportsRef.current.filter((r)=>r.img&&r.status!=="cleaned"&&r.category!=="повтор"&&r.category!=="предупреждение"&&r.category!=="та же точка"&&dataUrlToParts(r.img)).slice(0,3);
     async function callAI(candidatesForCall,timeoutMs){
       const parts=[];
       photosArray.forEach((p,i)=>{
