@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EcoBin</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -104,9 +106,9 @@ const RED = "var(--ecobin-red, #C1440E)";
 const WHITE = "var(--ecobin-white, #FFFFFF)";
 
 const SEED_REPORTS = [
-  { id:"seed-1",category:"пластик",severity:3,note:"Мусор у тротуара",points:30,time:"вчера",img:null,status:"pending",pos:{top:"32%",left:"62%"} },
-  { id:"seed-2",category:"смешанный",severity:4,note:"Переполненный контейнер",points:40,time:"2 дня назад",img:null,status:"cleaned",pos:{top:"58%",left:"28%"} },
-  { id:"seed-3",category:"листва",severity:2,note:"Куча листвы у дерева",points:20,time:"3 дня назад",img:null,status:"pending",pos:{top:"45%",left:"45%"} },
+  { id:"seed-1",category:"пластик",severity:3,note:"Мусор у тротуара",points:30,time:"вчера",img:null,status:"pending",pos:{top:"32%",left:"62%"},location:{lat:41.3275,lng:69.2817} },
+  { id:"seed-2",category:"смешанный",severity:4,note:"Переполненный контейнер",points:40,time:"2 дня назад",img:null,status:"cleaned",pos:{top:"58%",left:"28%"},location:{lat:41.3055,lng:69.2585} },
+  { id:"seed-3",category:"листва",severity:2,note:"Куча листвы у дерева",points:20,time:"3 дня назад",img:null,status:"pending",pos:{top:"45%",left:"45%"},location:{lat:41.3145,lng:69.2701} },
 ];
 
 const LanguageContext = createContext("ru");
@@ -463,9 +465,9 @@ const STRINGS = {
 };
 
 const BIN_LOCATIONS = [
-  { id:"bin-1", name:"Урна №1 — ул. Мирзо-Улугбек", pos:{top:"18%",left:"20%"} },
-  { id:"bin-2", name:"Урна №2 — школьный двор", pos:{top:"75%",left:"55%"} },
-  { id:"bin-3", name:"Урна №3 — парк у дома", pos:{top:"40%",left:"78%"} },
+  { id:"bin-1", name:"Урна №1 — ул. Мирзо-Улугбек", pos:{top:"18%",left:"20%"}, location:{lat:41.3320,lng:69.2905} },
+  { id:"bin-2", name:"Урна №2 — школьный двор", pos:{top:"75%",left:"55%"}, location:{lat:41.2990,lng:69.2680} },
+  { id:"bin-3", name:"Урна №3 — парк у дома", pos:{top:"40%",left:"78%"}, location:{lat:41.3180,lng:69.3010} },
 ];
 const BIN_NAME_LABELS = {
   "bin-1":{ru:"Урна №1 — ул. Мирзо-Улугбек",uz:"1-konteyner — Mirzo Ulug'bek ko'chasi",en:"Bin #1 — Mirzo Ulugbek St."},
@@ -896,7 +898,8 @@ function App() {
             {screen==="splash"&&<SplashScreen exiting={splashExiting}/>}
             {screen==="language-select"&&<LanguageSelectScreen onSelect={(code)=>{setLanguage(code);setScreen("onboarding");}}/>}
             {screen==="onboarding"&&<OnboardingScreen onDone={finishOnboarding}/>}
-            {screen==="home"&&<HomeScreen points={points} reports={reports} onSelectPin={setSelectedId} pendingCount={pendingQueue.length} isOnline={isOnline} binFills={binFills} binDevices={binDevices} onSelectBin={setSelectedBinId} onOpenDashboard={()=>setScreen("dashboard")} myLocation={myLocation}/>}
+            {screen==="home"&&<HomeScreen points={points} reports={reports} onSelectPin={setSelectedId} pendingCount={pendingQueue.length} isOnline={isOnline} binFills={binFills} binDevices={binDevices} onSelectBin={setSelectedBinId} onOpenDashboard={()=>setScreen("dashboard")} myLocation={myLocation} onOpenFullMap={()=>setScreen("fullmap")}/>}
+            {screen==="fullmap"&&<FullMapScreen reports={reports} bins={BIN_LOCATIONS} binFills={binFills} binDevices={binDevices} myLocation={myLocation} onSelectPin={(id)=>{setSelectedId(id);}} onSelectBin={(id)=>{setSelectedBinId(id);}} onBack={()=>setScreen("home")} lang={language}/>}
             {screen==="profile"&&<ProfileScreen points={points} reports={reports} onReset={resetDemo} onExport={exportReportsCSV}/>}
             {screen==="settings"&&<SettingsScreen onBack={()=>setScreen("home")} language={language} onSetLanguage={setLanguage} theme={theme} onSetTheme={setTheme}/>}
             {screen==="leaderboard"&&<LeaderboardScreen reports={reports}/>}
@@ -917,8 +920,8 @@ function App() {
           </div>
           <input ref={cameraInputRef} type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
           <input ref={afterInputRef} type="file" accept="image/*" onChange={handleAfterFile} style={{display:"none"}}/>
-          {screen==="home"&&selectedId&&<ReportDetailSheet report={reports.find((r)=>r.id===selectedId)} onClose={()=>setSelectedId(null)} onStartCleanup={startCleanupPhoto} onMarkCleanedNoPhoto={(id)=>{markCleaned(id,null);setSelectedId(null);}}/>}
-          {screen==="home"&&selectedBinId&&<BinDetailSheet bin={BIN_LOCATIONS.find((b)=>b.id===selectedBinId)} fill={binFills[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} device={binDevices[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} onClose={()=>setSelectedBinId(null)}/>}
+          {(screen==="home"||screen==="fullmap")&&selectedId&&<ReportDetailSheet report={reports.find((r)=>r.id===selectedId)} onClose={()=>setSelectedId(null)} onStartCleanup={startCleanupPhoto} onMarkCleanedNoPhoto={(id)=>{markCleaned(id,null);setSelectedId(null);}}/>}
+          {(screen==="home"||screen==="fullmap")&&selectedBinId&&<BinDetailSheet bin={BIN_LOCATIONS.find((b)=>b.id===selectedBinId)} fill={binFills[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} device={binDevices[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} onClose={()=>setSelectedBinId(null)}/>}
           {showTabs&&(
             <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"space-around",padding:"10px 8px 18px",background:WHITE,borderTop:`1px solid ${CARD}`}}>
               <button onClick={()=>setScreen("home")} style={navBtnStyle}><Home size={20} color={screen==="home"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="home"?FOREST:MUTED,fontWeight:screen==="home"?700:500}}>{t("navHome")}</span></button>
@@ -980,7 +983,70 @@ function OnboardingScreen({onDone}){
     </div>
   );
 }
-function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,binDevices,onSelectBin,onOpenDashboard,myLocation}){
+const TASHKENT_CENTER=[41.3111,69.2797];
+function LeafletMap({reports,bins,binFills,binDevices,myLocation,onSelectPin,onSelectBin,fullscreen,onExpand,lang}){
+  const mapRef=useRef(null);
+  const containerRef=useRef(null);
+  const markersRef=useRef([]);
+  useEffect(()=>{
+    if(!containerRef.current||typeof L==="undefined")return;
+    if(mapRef.current)return;
+    const center=myLocation?[myLocation.lat,myLocation.lng]:TASHKENT_CENTER;
+    const map=L.map(containerRef.current,{zoomControl:fullscreen,attributionControl:false,dragging:fullscreen,scrollWheelZoom:fullscreen,doubleClickZoom:fullscreen,touchZoom:fullscreen,boxZoom:fullscreen,keyboard:fullscreen,tap:fullscreen}).setView(center,fullscreen?13:14);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+    mapRef.current=map;
+    setTimeout(()=>map.invalidateSize(),100);
+    return()=>{map.remove();mapRef.current=null;};
+  },[fullscreen]);
+  useEffect(()=>{
+    const map=mapRef.current; if(!map||typeof L==="undefined")return;
+    markersRef.current.forEach((m)=>map.removeLayer(m)); markersRef.current=[];
+    const genuine=reports.filter((r)=>r.category!=="повтор"&&r.category!=="предупреждение"&&r.category!=="та же точка"&&r.location);
+    genuine.forEach((r)=>{
+      const color=r.status==="cleaned"?"#2D6A4F":"#FFB703";
+      const icon=L.divIcon({className:"",html:`<div style="width:16px;height:16px;border-radius:8px;background:${color};border:2px solid #fff;box-shadow:0 0 0 3px ${r.status==="cleaned"?"rgba(45,106,79,0.3)":"rgba(255,183,3,0.3)"}"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+      const marker=L.marker([r.location.lat,r.location.lng],{icon}).addTo(map);
+      marker.on("click",()=>{if(onSelectPin)onSelectPin(r.id);});
+      markersRef.current.push(marker);
+    });
+    bins.forEach((bin,i)=>{
+      if(!bin.location)return;
+      const fill=binFills[i];const st=binStatus(fill,lang);const online=!binDevices||binDevices[i]?.online!==false;const mc=online?st.color:"#5C6B66";
+      const icon=L.divIcon({className:"",html:`<div style="display:flex;flex-direction:column;align-items:center"><div style="width:24px;height:24px;border-radius:7px;background:#fff;border:2px solid ${mc};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.25)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${mc}" stroke-width="2"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><span style="font-size:9px;font-weight:700;color:${mc};background:#fff;border-radius:5px;padding:0 3px;margin-top:1px;box-shadow:0 1px 3px rgba(0,0,0,0.2)">${online?fill+"%":"···"}</span></div>`,iconSize:[24,36],iconAnchor:[12,18]});
+      const marker=L.marker([bin.location.lat,bin.location.lng],{icon}).addTo(map);
+      marker.on("click",()=>{if(onSelectBin)onSelectBin(bin.id);});
+      markersRef.current.push(marker);
+    });
+    if(myLocation){
+      const meIcon=L.divIcon({className:"",html:`<div style="width:16px;height:16px;border-radius:8px;background:#2196F3;border:3px solid #fff;box-shadow:0 0 0 4px rgba(33,150,243,0.3)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+      const marker=L.marker([myLocation.lat,myLocation.lng],{icon:meIcon}).addTo(map);
+      markersRef.current.push(marker);
+    }
+  },[reports,bins,binFills,binDevices,myLocation,fullscreen,lang]);
+  return h("div",{style:{position:"relative",width:"100%",height:"100%"}},
+    h("div",{ref:containerRef,style:{width:"100%",height:"100%",borderRadius:fullscreen?0:16,zIndex:1}}),
+    !fullscreen&&h("div",{onClick:onExpand,style:{position:"absolute",inset:0,zIndex:2,cursor:"pointer",borderRadius:16}}),
+    !fullscreen&&h("div",{style:{position:"absolute",bottom:8,right:8,zIndex:3,background:"rgba(255,255,255,0.95)",borderRadius:8,padding:"4px 8px",fontSize:10,fontWeight:700,color:FOREST,pointerEvents:"none",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}},"⤢ Открыть")
+  );
+}
+function FullMapScreen({reports,bins,binFills,binDevices,myLocation,onSelectPin,onSelectBin,onBack,lang}){
+  const t=useT();
+  useEffect(()=>{
+    const tg=window.Telegram&&window.Telegram.WebApp;
+    if(tg&&tg.disableVerticalSwipes){try{tg.disableVerticalSwipes();}catch{}}
+    return()=>{if(tg&&tg.enableVerticalSwipes){try{tg.enableVerticalSwipes();}catch{}}};
+  },[]);
+  return h("div",{style:{position:"absolute",inset:0,zIndex:20,background:LIGHTBG,display:"flex",flexDirection:"column"}},
+    h("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"12px 16px",background:WHITE,borderBottom:`1px solid ${CARD}`,zIndex:2}},
+      h("button",{onClick:onBack,style:{background:"none",border:"none",cursor:"pointer",padding:4}},h(ChevronLeft,{size:22,color:TEXTDARK})),
+      h("p",{style:{margin:0,fontWeight:700,fontSize:16,color:TEXTDARK}},t("cityMap"))
+    ),
+    h("div",{style:{flex:1,position:"relative"}},
+      h(LeafletMap,{reports,bins,binFills,binDevices,myLocation,onSelectPin,onSelectBin,fullscreen:true,lang})
+    )
+  );
+}
+function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,binDevices,onSelectBin,onOpenDashboard,myLocation,onOpenFullMap}){
   const t=useT();const lang=useLang();
   const genuine=reports.filter((r)=>r.category!=="повтор"&&r.category!=="предупреждение"&&r.category!=="та же точка");
   const totalCount=genuine.length,cleanedCount=genuine.filter((r)=>r.status==="cleaned").length,activeCount=totalCount-cleanedCount;
@@ -1015,10 +1081,8 @@ function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,b
         </div>
       </div>
       <p style={{fontSize:13,fontWeight:700,color:TEXTDARK,margin:"16px 0 8px"}}>{t("cityMap")}</p>
-      <div style={{position:"relative",height:150,background:"#DCEDE1",borderRadius:16,overflow:"hidden"}}>
-        <svg width="100%" height="100%" viewBox="0 0 300 150" style={{position:"absolute",inset:0}}><rect x="0" y="60" width="300" height="14" fill="#C7DCD0"/><rect x="130" y="0" width="14" height="150" fill="#C7DCD0"/></svg>
-        {genuine.slice(0,6).map((r)=>{const color=r.status==="cleaned"?FOREST2:AMBER;return(<button key={r.id} onClick={()=>onSelectPin(r.id)} style={{position:"absolute",top:r.pos.top,left:r.pos.left,transform:"translate(-50%,-50%)",background:"none",border:"none",padding:8,cursor:"pointer"}}><div style={{width:12,height:12,borderRadius:6,background:color,border:`2px solid ${WHITE}`,boxShadow:`0 0 0 3px ${r.status==="cleaned"?"rgba(45,106,79,0.3)":"rgba(255,183,3,0.3)"}`}}/></button>);})}
-        {BIN_LOCATIONS.map((bin,i)=>{const fill=binFills[i];const st=binStatus(fill,lang);const online=!binDevices||binDevices[i]?.online!==false;const mc=online?st.color:MUTED;return(<button key={bin.id} onClick={()=>onSelectBin(bin.id)} style={{position:"absolute",top:bin.pos.top,left:bin.pos.left,transform:"translate(-50%,-50%)",background:"none",border:"none",padding:4,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center"}}><div style={{width:22,height:22,borderRadius:7,background:WHITE,border:`2px solid ${mc}`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 6px rgba(0,0,0,0.18)",opacity:online?1:0.6}}><Trash2 size={12} color={mc}/></div><span style={{fontSize:8.5,fontWeight:700,color:mc,background:WHITE,borderRadius:5,padding:"0 3px",marginTop:1}}>{online?`${fill}%`:"···"}</span></button>);})}
+      <div style={{position:"relative",height:170,borderRadius:16,overflow:"hidden"}}>
+        <LeafletMap reports={reports} bins={BIN_LOCATIONS} binFills={binFills} binDevices={binDevices} myLocation={myLocation} onSelectPin={onSelectPin} onSelectBin={onSelectBin} fullscreen={false} onExpand={onOpenFullMap} lang={lang}/>
       </div>
       <div style={{display:"flex",gap:14,marginTop:8,flexWrap:"wrap"}}>
         <span style={{display:"flex",alignItems:"center",gap:5,fontSize:10.5,color:MUTED}}><span style={{width:8,height:8,borderRadius:4,background:AMBER,display:"inline-block"}}/>{t("legendPending")}</span>
