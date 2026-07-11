@@ -21,7 +21,7 @@
 <meta name="twitter:description" content="Фотографируй мусор, получай баллы от ИИ, следи за картой города.">
 <meta name="twitter:image" content="https://karivv.github.io/ecobin-miniapp/ecobin_og_banner.png">
 
-<meta name="description" content="EcoBin — AI-платформа для чистых городов Узбекистана. Фотографируй мусор, получай баллы, следи за картой.">
+<meta name="description" content="EcoBin — ИИ-платформа для чистых городов Узбекистана. Фотографируй мусор, получай баллы, следи за картой.">
 <link rel="icon" type="image/png" href="ecobin_avatar.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
@@ -187,7 +187,7 @@ const STRINGS = {
     dashboardSubtitle:"Демо-вид — как видит хакимият",
     captureTitle:"Сфотографируй мусор",captureSubtitle:"Можно несколько ракурсов одного места — это одна заявка",
     takePhoto:"Сделать фото",sendForCheck:"Отправить на проверку",retake:"Переснять",
-    removePhoto:"Убрать фото",analyzing:"AI проверяет фото…",confirmed:"Подтверждено",
+    removePhoto:"Убрать фото",analyzing:"ИИ проверяет фото…",confirmed:"Подтверждено",
     done:"Готово",share:"Поделиться",copied:"Скопировано!",pointsAwarded:"баллов начислено",
     myReports:"Мои заявки",resetDemo:"Сбросить демо-данные",language:"Язык",
     appearanceTitle:"Оформление",themeLight:"Светлая",themeDark:"Тёмная",
@@ -197,8 +197,8 @@ const STRINGS = {
     levelNovice:"Новичок",levelActive:"Активный житель",levelHero:"Эко-герой",
     ratingTitle:"Рейтинг чистоты",ratingDistricts:"Районы",ratingCities:"Города",today:"Сегодня",
     onb1Title:"Увидел мусор — сфотографируй",onb1Desc:"Достаточно одного чёткого фото места, которое нужно убрать",
-    onb2Title:"Несколько ракурсов — одна заявка",onb2Desc:"Сними то же место с разных сторон — AI поймёт, что это один и тот же мусор, и не создаст дубликат",
-    onb3Title:"AI проверит и передаст городу",onb3Desc:"Модель сама определяет, что это мусор, и оценивает масштаб",
+    onb2Title:"Несколько ракурсов — одна заявка",onb2Desc:"Сними то же место с разных сторон — ИИ поймёт, что это один и тот же мусор, и не создаст дубликат",
+    onb3Title:"ИИ проверит и передаст городу",onb3Desc:"Модель сама определяет, что это мусор, и оценивает масштаб",
     onb4Title:"Получи баллы и следи за картой",onb4Desc:"Баллы за подтверждённые заявки, прогресс города — в реальном времени",
     next:"Далее",start:"Начать",skip:"Пропустить",chooseLanguage:"Выберите язык",
     ratingSubtitle:"Демо-данные для примера · убрано заявок за месяц",
@@ -214,7 +214,7 @@ const STRINGS = {
     myLocationBtn:"Моё местоположение",addrLoading:"определяем адрес…",geoAuto:"определено автоматически",geoUnknown:"геолокация не определена",
     pointsToResident:"баллов начислено жителю",
     markCleanedBtn:"С фото-подтверждением",markCleanedNoPhoto:"Отметить без фото",
-    level:"уровень",createdStep:"Заявка создана",confirmedStep:"Проверено AI",
+    level:"уровень",createdStep:"Заявка создана",confirmedStep:"Проверено ИИ",
     cleanedStep:"Убрано",pendingStep:"ожидается",
     binFillLevel:"Заполненность",
     binDescription:"Автономная урна: автооткрытие крышки, солнечная панель, датчик заполненности — данные передаются через ESP32.",
@@ -232,7 +232,7 @@ const STRINGS = {
     defaultErrorMsg:"Проверь связь и попробуй снова",
     defaultRejectedNote:"Попробуй сфотографировать чётче, чтобы место было хорошо видно",
     sameSpotTitleVision:"Похоже, это та же куча мусора",sameSpotTitleGeo:"Это место уже на карте",
-    sameSpotDescVision:"AI посмотрел на фото и решил, что это та же куча мусора, просто с другого ракурса.",
+    sameSpotDescVision:"ИИ посмотрел на фото и решил, что это та же куча мусора, просто с другого ракурса.",
     sameSpotDescGeoTemplate:"Похоже, ты сфотографировал ту же точку, что уже отмечена ({time}).",
     sameSpotDescGeoNoTime:"Похоже, ты сфотографировал ту же точку, что уже отмечена.",
     sameSpotDescSuffix:"Заявка уже создана и ожидает уборки, новые баллы за это место не начисляются.",
@@ -246,14 +246,19 @@ const STRINGS = {
     replayTooltip:"Показать как новому пользователю",reportTrash:"Сообщить о мусоре",
     openReportLabel:"Открыть заявку",back:"Назад",
     checkFailedTitle:"Не удалось проверить фото",manualConfirmTitle:"Подтверди вручную",
-    manualConfirmDesc:"AI-проверка недоступна без сервера. Убедись что на фото — реальный мусор на улице, и выбери категорию:",
+    manualConfirmDesc:"ИИ-проверка недоступна без сервера. Убедись что на фото — реальный мусор на улице, и выбери категорию:",
     manualConfirmBtn:"Это мусор — отправить",manualNotTrash:"Это не мусор — отмена",
     retrySamePhoto:"Попробовать это же фото снова",photoLoadError:"Не удалось загрузить фото. Попробуй другое.",
     analyzingFewSeconds:"Это займёт несколько секунд",
     analyzingMultiPhoto:"{n} ракурса одного места — это займёт чуть больше времени",
+    settingsDistrictTitle:"Мой район",settingsNotifTitle:"Уведомления",settingsDeviceTitle:"EcoBin устройство",settingsAboutTitle:"О приложении",
+    notifCleanedLabel:"Заявку убрали",notifCleanedDesc:"Уведомить когда место очищено",
+    notifSoundLabel:"Звук при успехе",notifSoundDesc:"Звук когда заявка принята",
+    deviceConnectLabel:"Подключить умную урну",deviceConnectDesc:"Сканировать QR-код устройства",
+    aboutTagline:"Молодёжный экостартап · Узбекистан",aboutBotLabel:"Telegram бот",
     tourStats:"Твои баллы и заявки",tourStatsDesc:"Здесь видно сколько баллов ты набрал и сколько заявок ещё ждут уборки",
     tourMap:"Карта города",tourMapDesc:"Твои заявки и умные урны на реальной карте. Нажми, чтобы открыть на весь экран",
-    tourAdd:"Главная кнопка",tourAddDesc:"Увидел мусор — жми сюда, сфотографируй, и AI проверит фото",
+    tourAdd:"Главная кнопка",tourAddDesc:"Увидел мусор — жми сюда, сфотографируй, и ИИ проверит фото",
     tourRating:"Рейтинг",tourRatingDesc:"Соревнование районов и городов за чистоту",
     tourProfile:"Профиль",tourProfileDesc:"Твои достижения, баллы и все отправленные заявки",
     tourSettings:"Настройки",tourSettingsDesc:"Язык, тема, район и уведомления",
@@ -280,12 +285,12 @@ const STRINGS = {
     feedTitle:"Лента событий",feedBinFull:"заполнена на {fill}% — ждёт вывоза",
     feedNewReport:"Новая заявка",feedCleaned:"Убрано",
     beforeLabel:"До",afterLabel:"После",
-    afterCaptureTitle:"Подтверди уборку",afterCaptureSubtitle:"Сфотографируй то же место — AI сравнит с фото до уборки",
+    afterCaptureTitle:"Подтверди уборку",afterCaptureSubtitle:"Сфотографируй то же место — ИИ сравнит с фото до уборки",
     afterTakePhoto:"Сфотографировать место",afterSubmit:"Отправить на проверку",
-    afterAnalyzing:"AI сравнивает фото до и после…",
-    afterSuccessTitle:"Уборка подтверждена!",afterSuccessDesc:"AI сравнил оба фото и подтвердил: место чистое.",
+    afterAnalyzing:"ИИ сравнивает фото до и после…",
+    afterSuccessTitle:"Уборка подтверждена!",afterSuccessDesc:"ИИ сравнил оба фото и подтвердил: место чистое.",
     afterRejectedTitle:"Похоже, мусор ещё виден",
-    afterRejectedDefaultNote:"AI не уверен, что место полностью убрано — попробуй фото при лучшем освещении или с другого ракурса.",
+    afterRejectedDefaultNote:"ИИ не уверен, что место полностью убрано — попробуй фото при лучшем освещении или с другого ракурса.",
     afterTryAnother:"Попробовать другое фото",afterForceMark:"Всё равно отметить как убрано",
     exportReports:"Скачать заявки (CSV)",
     monetizationTeaser:"накоплено — скоро можно будет обменивать на кэшбэк и бонусы партнёров",
@@ -367,6 +372,11 @@ const STRINGS = {
     retrySamePhoto:"Shu suratni qayta urinish",photoLoadError:"Suratni yuklab bo'lmadi. Boshqasini urinib ko'r.",
     analyzingFewSeconds:"Bu bir necha soniya vaqt oladi",
     analyzingMultiPhoto:"{n} burchakdan olingan bitta joy — bu biroz ko'proq vaqt oladi",
+    settingsDistrictTitle:"Mening tumanim",settingsNotifTitle:"Bildirishnomalar",settingsDeviceTitle:"EcoBin qurilmasi",settingsAboutTitle:"Ilova haqida",
+    notifCleanedLabel:"Murojaat tozalandi",notifCleanedDesc:"Joy tozalanganda xabar berish",
+    notifSoundLabel:"Muvaffaqiyat ovozi",notifSoundDesc:"Murojaat qabul qilinganda ovoz",
+    deviceConnectLabel:"Aqlli konteynerni ulash",deviceConnectDesc:"Qurilma QR-kodini skanerlash",
+    aboutTagline:"Yoshlar eko-startapi · O'zbekiston",aboutBotLabel:"Telegram bot",
     tourStats:"Ballaringiz va murojaatlar",tourStatsDesc:"Bu yerda nechta ball to'plaganingiz va nechta murojaat kutayotgani ko'rinadi",
     tourMap:"Shahar xaritasi",tourMapDesc:"Murojaatlaringiz va aqlli konteynerlar haqiqiy xaritada. To'liq ekranda ochish uchun bosing",
     tourAdd:"Asosiy tugma",tourAddDesc:"Chiqindini ko'rdingizmi — shu yerni bosing, suratga oling, AI tekshiradi",
@@ -483,6 +493,11 @@ const STRINGS = {
     retrySamePhoto:"Try this same photo again",photoLoadError:"Couldn't load the photo. Try another one.",
     analyzingFewSeconds:"This will take a few seconds",
     analyzingMultiPhoto:"{n} angles of the same spot — this will take a bit longer",
+    settingsDistrictTitle:"My district",settingsNotifTitle:"Notifications",settingsDeviceTitle:"EcoBin device",settingsAboutTitle:"About",
+    notifCleanedLabel:"Report cleaned",notifCleanedDesc:"Notify when the spot is cleaned up",
+    notifSoundLabel:"Success sound",notifSoundDesc:"Play a sound when a report is accepted",
+    deviceConnectLabel:"Connect a smart bin",deviceConnectDesc:"Scan the device QR code",
+    aboutTagline:"Youth eco-startup · Uzbekistan",aboutBotLabel:"Telegram bot",
     tourStats:"Your points and reports",tourStatsDesc:"See how many points you've earned and how many reports await cleanup",
     tourMap:"City map",tourMapDesc:"Your reports and smart bins on a real map. Tap to open fullscreen",
     tourAdd:"The main button",tourAddDesc:"Spotted trash? Tap here, take a photo, and AI will verify it",
@@ -1002,7 +1017,7 @@ function App() {
               {!isTelegramApp&&<span>9:41</span>}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <button onClick={replayAsNewUser} title={t("replayTooltip")} style={{background:CARD,border:"none",borderRadius:8,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><RotateCcw size={11} color={FOREST}/></button>
-                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.0.2</span>
+                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.0.0</span>
               </div>
             </div>
           )}
@@ -1502,39 +1517,39 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme,onOpenQR
       {sectionLabel(t("appearanceTitle"))}
       <div style={{display:"flex",gap:6,background:CARD,borderRadius:12,padding:4}}>{[{code:"light",label:t("themeLight")},{code:"dark",label:t("themeDark")}].map((opt)=>(<button key={opt.code} onClick={()=>onSetTheme(opt.code)} style={{flex:1,padding:"7px 0",borderRadius:9,border:"none",cursor:"pointer",background:theme===opt.code?WHITE:"transparent",color:theme===opt.code?FOREST:MUTED,fontWeight:700,fontSize:12.5,boxShadow:theme===opt.code?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{opt.label}</button>))}</div>
 
-      {sectionLabel("Мой район")}
+      {sectionLabel(t("settingsDistrictTitle"))}
       <button onClick={()=>setShowDistrictPicker(!showDistrictPicker)} style={{width:"100%",background:CARD,borderRadius:12,padding:"11px 14px",border:"none",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontSize:13,fontWeight:600,color:TEXTDARK}}>{districtLabel}</span>
         <ChevronLeft size={16} color={MUTED} style={{transform:"rotate(-90deg)"}}/>
       </button>
       {showDistrictPicker&&(<div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,marginTop:4,overflow:"hidden"}}>{districts.map((d)=>(<button key={d.code} onClick={()=>{setDistrict(d.code);setShowDistrictPicker(false);}} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${CARD}`,background:district===d.code?CARD:WHITE,cursor:"pointer",textAlign:"left",fontSize:13,color:district===d.code?FOREST:TEXTDARK,fontWeight:district===d.code?700:400}}>{d.label}</button>))}</div>)}
 
-      {sectionLabel("Уведомления")}
+      {sectionLabel(t("settingsNotifTitle"))}
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,overflow:"hidden"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderBottom:`1px solid ${CARD}`}}>
-          <div><p style={{margin:0,fontSize:13,color:TEXTDARK}}>Заявку убрали</p><p style={{margin:"2px 0 0",fontSize:11,color:MUTED}}>Уведомить когда место очищено</p></div>
+          <div><p style={{margin:0,fontSize:13,color:TEXTDARK}}>{t("notifCleanedLabel")}</p><p style={{margin:"2px 0 0",fontSize:11,color:MUTED}}>{t("notifCleanedDesc")}</p></div>
           <Toggle value={notifCleaned} onChange={setNotifCleaned}/>
         </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px"}}>
-          <div><p style={{margin:0,fontSize:13,color:TEXTDARK}}>Звук при успехе</p><p style={{margin:"2px 0 0",fontSize:11,color:MUTED}}>Звук когда заявка принята</p></div>
+          <div><p style={{margin:0,fontSize:13,color:TEXTDARK}}>{t("notifSoundLabel")}</p><p style={{margin:"2px 0 0",fontSize:11,color:MUTED}}>{t("notifSoundDesc")}</p></div>
           <Toggle value={notifSound} onChange={setNotifSound}/>
         </div>
       </div>
 
-      {sectionLabel("EcoBin устройство")}
+      {sectionLabel(t("settingsDeviceTitle"))}
       <button onClick={onOpenQR} style={{width:"100%",background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
         <div style={{width:42,height:42,borderRadius:11,background:CARD,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Trash2 size={20} color={FOREST}/></div>
-        <div style={{flex:1}}><p style={{margin:0,fontSize:13,fontWeight:600,color:TEXTDARK}}>Подключить умную урну</p><p style={{margin:"2px 0 0",fontSize:11,color:MUTED}}>Сканировать QR-код устройства</p></div>
+        <div style={{flex:1}}><p style={{margin:0,fontSize:13,fontWeight:600,color:TEXTDARK}}>{t("deviceConnectLabel")}</p><p style={{margin:"2px 0 0",fontSize:11,color:MUTED}}>{t("deviceConnectDesc")}</p></div>
         <div style={{width:36,height:36,borderRadius:9,background:FOREST,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Camera size={17} color={WHITE}/></div>
       </button>
 
-      {sectionLabel("О приложении")}
+      {sectionLabel(t("settingsAboutTitle"))}
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <div style={{width:38,height:38,borderRadius:10,background:FOREST,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Leaf size={19} color={WHITE}/></div>
-          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.0.2</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>Молодёжный экостартап · Узбекистан</p></div>
+          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.0.0</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>{t("aboutTagline")}</p></div>
         </div>
-        <div style={{borderTop:`1px solid ${CARD}`,paddingTop:8,fontSize:11.5,color:MUTED}}>Telegram бот: @ecobin_uz_bot</div>
+        <div style={{borderTop:`1px solid ${CARD}`,paddingTop:8,fontSize:11.5,color:MUTED}}>{t("aboutBotLabel")}: @ecobin_uz_bot</div>
       </div>
       <button onClick={()=>{try{localStorage.removeItem("ecobin_tour_done");}catch{}onBack();}} style={{width:"100%",marginTop:10,padding:"11px 0",borderRadius:12,border:`1px solid ${FOREST2}`,background:CARD,color:FOREST,fontWeight:700,fontSize:12.5,cursor:"pointer"}}>{t("tourRestart")}</button>
     </div>
