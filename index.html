@@ -219,6 +219,14 @@ const STRINGS = {
     retrySamePhoto:"Попробовать это же фото снова",photoLoadError:"Не удалось загрузить фото. Попробуй другое.",
     analyzingFewSeconds:"Это займёт несколько секунд",
     analyzingMultiPhoto:"{n} ракурса одного места — это займёт чуть больше времени",
+    tourStats:"Твои баллы и заявки",tourStatsDesc:"Здесь видно сколько баллов ты набрал и сколько заявок ещё ждут уборки",
+    tourMap:"Карта города",tourMapDesc:"Твои заявки и умные урны на реальной карте. Нажми, чтобы открыть на весь экран",
+    tourAdd:"Главная кнопка",tourAddDesc:"Увидел мусор — жми сюда, сфотографируй, и AI проверит фото",
+    tourRating:"Рейтинг",tourRatingDesc:"Соревнование районов и городов за чистоту",
+    tourProfile:"Профиль",tourProfileDesc:"Твои достижения, баллы и все отправленные заявки",
+    tourSettings:"Настройки",tourSettingsDesc:"Язык, тема, район и уведомления",
+    tourDashboard:"Дашборд города",tourDashboardDesc:"Так проект видят городские службы — статистика и тепловая карта",
+    tourNext:"Далее",tourFinish:"Понятно",tourSkip:"Пропустить",tourStepOf:"из",tourRestart:"Показать обучение заново",
     achievementsTitle:"Достижения",
     achFirstReportTitle:"Первая заявка",achFirstReportDesc:"Отправь свою первую заявку",
     achFiveReportsTitle:"Активный наблюдатель",achFiveReportsDesc:"5 отправленных заявок",
@@ -323,6 +331,14 @@ const STRINGS = {
     retrySamePhoto:"Shu suratni qayta urinish",photoLoadError:"Suratni yuklab bo'lmadi. Boshqasini urinib ko'r.",
     analyzingFewSeconds:"Bu bir necha soniya vaqt oladi",
     analyzingMultiPhoto:"{n} burchakdan olingan bitta joy — bu biroz ko'proq vaqt oladi",
+    tourStats:"Ballaringiz va murojaatlar",tourStatsDesc:"Bu yerda nechta ball to'plaganingiz va nechta murojaat kutayotgani ko'rinadi",
+    tourMap:"Shahar xaritasi",tourMapDesc:"Murojaatlaringiz va aqlli konteynerlar haqiqiy xaritada. To'liq ekranda ochish uchun bosing",
+    tourAdd:"Asosiy tugma",tourAddDesc:"Chiqindini ko'rdingizmi — shu yerni bosing, suratga oling, AI tekshiradi",
+    tourRating:"Reyting",tourRatingDesc:"Tumanlar va shaharlar o'rtasida tozalik musobaqasi",
+    tourProfile:"Profil",tourProfileDesc:"Yutuqlaringiz, ballaringiz va barcha murojaatlaringiz",
+    tourSettings:"Sozlamalar",tourSettingsDesc:"Til, mavzu, tuman va bildirishnomalar",
+    tourDashboard:"Shahar dashboardi",tourDashboardDesc:"Loyihani shahar xizmatlari shunday ko'radi — statistika va issiqlik xaritasi",
+    tourNext:"Keyingi",tourFinish:"Tushunarli",tourSkip:"O'tkazib yuborish",tourStepOf:"dan",tourRestart:"Qo'llanmani qayta ko'rsatish",
     achievementsTitle:"Yutuqlar",
     achFirstReportTitle:"Birinchi murojaat",achFirstReportDesc:"Birinchi murojaatingizni yuboring",
     achFiveReportsTitle:"Faol kuzatuvchi",achFiveReportsDesc:"5 ta murojaat yuborildi",
@@ -427,6 +443,14 @@ const STRINGS = {
     retrySamePhoto:"Try this same photo again",photoLoadError:"Couldn't load the photo. Try another one.",
     analyzingFewSeconds:"This will take a few seconds",
     analyzingMultiPhoto:"{n} angles of the same spot — this will take a bit longer",
+    tourStats:"Your points and reports",tourStatsDesc:"See how many points you've earned and how many reports await cleanup",
+    tourMap:"City map",tourMapDesc:"Your reports and smart bins on a real map. Tap to open fullscreen",
+    tourAdd:"The main button",tourAddDesc:"Spotted trash? Tap here, take a photo, and AI will verify it",
+    tourRating:"Rating",tourRatingDesc:"Districts and cities competing on cleanliness",
+    tourProfile:"Profile",tourProfileDesc:"Your achievements, points and all submitted reports",
+    tourSettings:"Settings",tourSettingsDesc:"Language, theme, district and notifications",
+    tourDashboard:"City dashboard",tourDashboardDesc:"How city services see the project — stats and heatmap",
+    tourNext:"Next",tourFinish:"Got it",tourSkip:"Skip",tourStepOf:"of",tourRestart:"Show the tutorial again",
     achievementsTitle:"Achievements",
     achFirstReportTitle:"First report",achFirstReportDesc:"Submit your first report",
     achFiveReportsTitle:"Active observer",achFiveReportsDesc:"5 reports submitted",
@@ -642,6 +666,7 @@ function App() {
   const [afterNewAchievements,setAfterNewAchievements]=useState([]);
   const [debugSim,setDebugSim]=useState(null);
   const [splashExiting,setSplashExiting]=useState(false);
+  const [showTour,setShowTour]=useState(false);
   const [language,setLanguage]=useState("ru");
   const [theme,setTheme]=useState("light");
   const [fontScale,setFontScale]=useState(1);
@@ -654,6 +679,11 @@ function App() {
   const [tgViewportWidth,setTgViewportWidth]=useState(typeof window!=="undefined"?window.innerWidth:null);
 
   useEffect(()=>{if(screen==="home"&&!myLocation){getLocation().then((loc)=>{if(loc)setMyLocation(loc);});}}, [screen,myLocation]);
+  useEffect(()=>{
+    if(screen!=="home")return;
+    let done=null; try{done=localStorage.getItem("ecobin_tour_done");}catch{}
+    if(!done){const tm=setTimeout(()=>setShowTour(true),700);return()=>clearTimeout(tm);}
+  },[screen]);
   useEffect(()=>{if(screen!=="splash")return;const timer=setTimeout(()=>setSplashExiting(true),2200);return()=>clearTimeout(timer);},[screen]);
   useEffect(()=>{
     if(!splashExiting)return;
@@ -719,6 +749,8 @@ function App() {
   async function replayAsNewUser(){
     await resetDemo();
     try{await window.storage.delete("ecobin_onboarded",false);}catch{}
+    try{localStorage.removeItem("ecobin_tour_done");}catch{}
+    setShowTour(false);
     setSplashExiting(false);setScreen("splash");
   }
   function markCleaned(id,afterImg){setReports((prev)=>prev.map((r)=>r.id===id?{...r,status:"cleaned",cleanedTime:"только что",afterImg:afterImg||null}:r));}
@@ -884,7 +916,7 @@ function App() {
     <LanguageContext.Provider value={language}>
     <div style={outerWrapStyle}>
       <div style={phoneFrameStyle}>
-        <div style={screenBoxStyle}>
+        <div style={screenBoxStyle} data-screen-box="1">
           {screen!=="splash"&&(
             <div style={{display:"flex",justifyContent:isTelegramApp?"flex-end":"space-between",alignItems:"center",padding:"10px 18px 4px",fontSize:12,color:TEXTDARK,fontWeight:600}}>
               {!isTelegramApp&&<span>9:41</span>}
@@ -922,13 +954,14 @@ function App() {
           <input ref={afterInputRef} type="file" accept="image/*" onChange={handleAfterFile} style={{display:"none"}}/>
           {(screen==="home"||screen==="fullmap")&&selectedId&&<ReportDetailSheet report={reports.find((r)=>r.id===selectedId)} onClose={()=>setSelectedId(null)} onStartCleanup={startCleanupPhoto} onMarkCleanedNoPhoto={(id)=>{markCleaned(id,null);setSelectedId(null);}}/>}
           {(screen==="home"||screen==="fullmap")&&selectedBinId&&<BinDetailSheet bin={BIN_LOCATIONS.find((b)=>b.id===selectedBinId)} fill={binFills[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} device={binDevices[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} onClose={()=>setSelectedBinId(null)}/>}
+          {showTour&&screen==="home"&&<TourOverlay onDone={()=>setShowTour(false)}/>}
           {showTabs&&(
             <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"space-around",padding:"10px 8px 18px",background:WHITE,borderTop:`1px solid ${CARD}`}}>
               <button onClick={()=>setScreen("home")} style={navBtnStyle}><Home size={20} color={screen==="home"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="home"?FOREST:MUTED,fontWeight:screen==="home"?700:500}}>{t("navHome")}</span></button>
-              <button onClick={()=>setScreen("leaderboard")} style={navBtnStyle}><Trophy size={20} color={screen==="leaderboard"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="leaderboard"?FOREST:MUTED,fontWeight:screen==="leaderboard"?700:500}}>{t("navRating")}</span></button>
-              <button onClick={openCapture} style={{width:50,height:50,borderRadius:25,background:FOREST,border:"none",display:"flex",alignItems:"center",justifyContent:"center",marginTop:-22,boxShadow:"0 6px 16px rgba(27,67,50,0.4)",cursor:"pointer",flexShrink:0}}><Plus size={24} color="#FFFFFF"/></button>
-              <button onClick={()=>setScreen("profile")} style={navBtnStyle}><User size={20} color={screen==="profile"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="profile"?FOREST:MUTED,fontWeight:screen==="profile"?700:500}}>{t("navProfile")}</span></button>
-              <button onClick={()=>setScreen("settings")} style={navBtnStyle}><Settings size={20} color={screen==="settings"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="settings"?FOREST:MUTED,fontWeight:screen==="settings"?700:500}}>{t("navSettings")}</span></button>
+              <button data-tour="rating" onClick={()=>setScreen("leaderboard")} style={navBtnStyle}><Trophy size={20} color={screen==="leaderboard"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="leaderboard"?FOREST:MUTED,fontWeight:screen==="leaderboard"?700:500}}>{t("navRating")}</span></button>
+              <button data-tour="add" onClick={openCapture} style={{width:50,height:50,borderRadius:25,background:FOREST,border:"none",display:"flex",alignItems:"center",justifyContent:"center",marginTop:-22,boxShadow:"0 6px 16px rgba(27,67,50,0.4)",cursor:"pointer",flexShrink:0}}><Plus size={24} color="#FFFFFF"/></button>
+              <button data-tour="profile" onClick={()=>setScreen("profile")} style={navBtnStyle}><User size={20} color={screen==="profile"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="profile"?FOREST:MUTED,fontWeight:screen==="profile"?700:500}}>{t("navProfile")}</span></button>
+              <button data-tour="settings" onClick={()=>setScreen("settings")} style={navBtnStyle}><Settings size={20} color={screen==="settings"?FOREST:MUTED}/><span style={{fontSize:10,color:screen==="settings"?FOREST:MUTED,fontWeight:screen==="settings"?700:500}}>{t("navSettings")}</span></button>
             </div>
           )}
         </div>
@@ -983,6 +1016,65 @@ function OnboardingScreen({onDone}){
     </div>
   );
 }
+const TOUR_STEPS=[
+  {sel:'[data-tour="stats"]',titleKey:"tourStats",descKey:"tourStatsDesc"},
+  {sel:'[data-tour="map"]',titleKey:"tourMap",descKey:"tourMapDesc"},
+  {sel:'[data-tour="dashboard"]',titleKey:"tourDashboard",descKey:"tourDashboardDesc"},
+  {sel:'[data-tour="add"]',titleKey:"tourAdd",descKey:"tourAddDesc"},
+  {sel:'[data-tour="rating"]',titleKey:"tourRating",descKey:"tourRatingDesc"},
+  {sel:'[data-tour="profile"]',titleKey:"tourProfile",descKey:"tourProfileDesc"},
+  {sel:'[data-tour="settings"]',titleKey:"tourSettings",descKey:"tourSettingsDesc"},
+];
+function TourOverlay({onDone}){
+  const t=useT();
+  const [step,setStep]=useState(0);
+  const [rect,setRect]=useState(null);
+  const total=TOUR_STEPS.length;
+  const cur=TOUR_STEPS[step];
+  useEffect(()=>{
+    function measure(){
+      const box=document.querySelector('[data-screen-box]');
+      const el=document.querySelector(cur.sel);
+      if(!box||!el){setRect(null);return;}
+      el.scrollIntoView({block:"center",behavior:"smooth"});
+      setTimeout(()=>{
+        const br=box.getBoundingClientRect();
+        const er=el.getBoundingClientRect();
+        setRect({top:er.top-br.top,left:er.left-br.left,width:er.width,height:er.height,boxH:br.height});
+      },300);
+    }
+    measure();
+    window.addEventListener("resize",measure);
+    return()=>window.removeEventListener("resize",measure);
+  },[step]);
+  function next(){ if(step<total-1){setStep(step+1);} else {finish();} }
+  function finish(){ try{localStorage.setItem("ecobin_tour_done","1");}catch{} onDone(); }
+  const pad=6;
+  const boxH=rect?rect.boxH:600;
+  const spotTop=rect?rect.top-pad:0;
+  const spotLeft=rect?rect.left-pad:0;
+  const spotW=rect?rect.width+pad*2:0;
+  const spotH=rect?rect.height+pad*2:0;
+  const placeBelow=rect?(spotTop+spotH<boxH*0.55):true;
+  const tipTop=rect?(placeBelow?spotTop+spotH+12:null):null;
+  const tipBottom=rect?(placeBelow?null:boxH-spotTop+12):null;
+  return h("div",{style:{position:"absolute",inset:0,zIndex:40}},
+    rect?h("div",{style:{position:"absolute",top:spotTop,left:spotLeft,width:spotW,height:spotH,borderRadius:12,boxShadow:"0 0 0 9999px rgba(8,20,15,0.78)",border:"2px solid "+AMBER,pointerEvents:"none",transition:"all 0.25s ease"}}):h("div",{style:{position:"absolute",inset:0,background:"rgba(8,20,15,0.78)"}}),
+    h("div",{onClick:next,style:{position:"absolute",inset:0}}),
+    h("div",{style:{position:"absolute",left:16,right:16,...(tipTop!==null?{top:tipTop}:{}),...(tipBottom!==null?{bottom:tipBottom}:{}),background:"#FFFFFF",borderRadius:16,padding:"14px 16px",boxShadow:"0 8px 30px rgba(0,0,0,0.35)"}},
+      h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
+        h("span",{style:{fontSize:10,fontWeight:700,color:"#5C6B66",letterSpacing:0.5}},(step+1)+" "+t("tourStepOf")+" "+total),
+        h("button",{onClick:(e)=>{e.stopPropagation();finish();},style:{background:"none",border:"none",fontSize:11,color:"#5C6B66",cursor:"pointer",padding:0}},t("tourSkip"))
+      ),
+      h("p",{style:{margin:0,fontSize:15,fontWeight:700,color:"#16241F"}},t(cur.titleKey)),
+      h("p",{style:{margin:"6px 0 0",fontSize:12.5,color:"#5C6B66",lineHeight:1.5}},t(cur.descKey)),
+      h("div",{style:{display:"flex",gap:5,marginTop:12,marginBottom:10,justifyContent:"center"}},
+        TOUR_STEPS.map((_,i)=>h("span",{key:i,style:{width:i===step?16:6,height:6,borderRadius:3,background:i===step?"#1B4332":"#D7E5DC",transition:"all 0.2s"}}))
+      ),
+      h("button",{onClick:(e)=>{e.stopPropagation();next();},style:{width:"100%",padding:"11px 0",borderRadius:12,border:"none",background:AMBER,color:"#1B4332",fontWeight:700,fontSize:13.5,cursor:"pointer"}},step===total-1?t("tourFinish"):t("tourNext"))
+    )
+  );
+}
 const TASHKENT_CENTER=[41.3111,69.2797];
 function LeafletMap({reports,bins,binFills,binDevices,myLocation,onSelectPin,onSelectBin,fullscreen,onExpand,lang}){
   const mapRef=useRef(null);
@@ -1018,7 +1110,7 @@ function LeafletMap({reports,bins,binFills,binDevices,myLocation,onSelectPin,onS
       markersRef.current.push(marker);
     });
     if(myLocation){
-      const meIcon=L.divIcon({className:"",html:`<div style="width:16px;height:16px;border-radius:8px;background:#2196F3;border:3px solid #fff;box-shadow:0 0 0 4px rgba(33,150,243,0.3)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+      const meIcon=L.divIcon({className:"",html:`<div style="width:10px;height:10px;border-radius:50%;background:#2196F3;border:2px solid #fff;box-shadow:0 0 0 2px rgba(33,150,243,0.35)"></div>`,iconSize:[10,10],iconAnchor:[5,5]});
       const marker=L.marker([myLocation.lat,myLocation.lng],{icon:meIcon}).addTo(map);
       markersRef.current.push(marker);
     }
@@ -1066,7 +1158,7 @@ function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,b
           </div>
         </div>
       )}
-      <div style={{display:"flex",gap:10,marginTop:14}}>
+      <div data-tour="stats" style={{display:"flex",gap:10,marginTop:14}}>
         <StatCard label={t("points")} value={points} icon={<Coins size={16} color={FOREST}/>}/>
         <StatCard label={t("activeReports")} value={activeCount} icon={<MapPin size={16} color={FOREST}/>}/>
       </div>
@@ -1081,7 +1173,7 @@ function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,b
         </div>
       </div>
       <p style={{fontSize:13,fontWeight:700,color:TEXTDARK,margin:"16px 0 8px"}}>{t("cityMap")}</p>
-      <div style={{position:"relative",height:170,borderRadius:16,overflow:"hidden"}}>
+      <div data-tour="map" style={{position:"relative",height:170,borderRadius:16,overflow:"hidden"}}>
         <LeafletMap reports={reports} bins={BIN_LOCATIONS} binFills={binFills} binDevices={binDevices} myLocation={myLocation} onSelectPin={onSelectPin} onSelectBin={onSelectBin} fullscreen={false} onExpand={onOpenFullMap} lang={lang}/>
       </div>
       <div style={{display:"flex",gap:14,marginTop:8,flexWrap:"wrap"}}>
@@ -1091,7 +1183,7 @@ function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,b
       </div>
       <p style={{fontSize:13,fontWeight:700,color:TEXTDARK,margin:"16px 0 8px"}}>{t("recentReports")}</p>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{reports.map((r)=>(<ReportRow key={r.id} report={r}/>))}</div>
-      <button onClick={onOpenDashboard} style={{width:"100%",marginTop:16,padding:"12px 14px",borderRadius:14,border:"none",background:FOREST,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+      <button data-tour="dashboard" onClick={onOpenDashboard} style={{width:"100%",marginTop:16,padding:"12px 14px",borderRadius:14,border:"none",background:FOREST,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
         <div style={{width:32,height:32,borderRadius:9,background:FOREST2,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><BarChart3 size={16} color="#FFFFFF"/></div>
         <div style={{textAlign:"left",flex:1}}><p style={{margin:0,fontSize:12.5,fontWeight:700,color:"#FFFFFF"}}>{t("cityDashboard")}</p><p style={{margin:0,fontSize:10.5,color:"#CFE8DA"}}>{t("dashboardSubtitle")}</p></div>
       </button>
@@ -1127,8 +1219,8 @@ function BinDetailSheet({bin,fill,device,onClose}){
   const st=binStatus(fill,lang);const dev=device||{battery:80,lastSignalMin:2,online:true};
   const battColor=dev.battery>=50?FOREST2:dev.battery>=20?AMBER:RED;
   return (
-    <><div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(13,26,20,0.45)",zIndex:5}}/>
-    <div style={{position:"absolute",left:0,right:0,bottom:0,background:WHITE,borderTopLeftRadius:24,borderTopRightRadius:24,padding:"10px 18px 20px",zIndex:6,boxShadow:"0 -10px 30px rgba(0,0,0,0.25)"}}>
+    <><div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(13,26,20,0.45)",zIndex:30}}/>
+    <div style={{position:"absolute",left:0,right:0,bottom:0,background:WHITE,borderTopLeftRadius:24,borderTopRightRadius:24,padding:"10px 18px 20px",zIndex:31,boxShadow:"0 -10px 30px rgba(0,0,0,0.25)",maxHeight:"75%",overflowY:"auto"}}>
       <div style={{width:36,height:4,borderRadius:2,background:"#D7E5DC",margin:"0 auto 14px"}}/>
       <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:44,height:44,borderRadius:12,background:CARD,display:"flex",alignItems:"center",justifyContent:"center"}}><Trash2 size={22} color={st.color}/></div><div><p style={{margin:0,fontWeight:700,fontSize:15,color:TEXTDARK}}>{binNameLabel(bin.id,lang)}</p><p style={{margin:"2px 0 0",fontSize:11.5,color:st.color,fontWeight:700}}>{st.label}</p></div></div>
       <div style={{marginTop:16}}><div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,color:MUTED,marginBottom:4}}><span>{t("binFillLevel")}</span><span style={{fontWeight:700,color:st.color}}>{fill}%</span></div><div style={{height:10,borderRadius:5,background:"#EAF4EE",overflow:"hidden"}}><div style={{width:`${fill}%`,height:"100%",background:st.color}}/></div></div>
@@ -1146,8 +1238,8 @@ function BinDetailSheet({bin,fill,device,onClose}){
 function ReportDetailSheet({report,onClose,onStartCleanup,onMarkCleanedNoPhoto}){
   const t=useT();const lang=useLang();if(!report)return null;const isCleaned=report.status==="cleaned";
   return (
-    <><div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(13,26,20,0.45)",zIndex:5}}/>
-    <div style={{position:"absolute",left:0,right:0,bottom:0,background:WHITE,borderTopLeftRadius:24,borderTopRightRadius:24,padding:"10px 18px 20px",zIndex:6,boxShadow:"0 -10px 30px rgba(0,0,0,0.25)"}}>
+    <><div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(13,26,20,0.45)",zIndex:30}}/>
+    <div style={{position:"absolute",left:0,right:0,bottom:0,background:WHITE,borderTopLeftRadius:24,borderTopRightRadius:24,padding:"10px 18px 20px",zIndex:31,boxShadow:"0 -10px 30px rgba(0,0,0,0.25)",maxHeight:"75%",overflowY:"auto"}}>
       <div style={{width:36,height:4,borderRadius:2,background:"#D7E5DC",margin:"0 auto 14px"}}/>
       {isCleaned&&report.afterImg?(<div style={{display:"flex",gap:6}}><div style={{flex:1}}><img src={report.img} alt="" style={{width:"100%",height:130,objectFit:"cover",borderRadius:14}}/><p style={{textAlign:"center",fontSize:9,color:MUTED,margin:"3px 0 0"}}>{t("beforeLabel")}</p></div><div style={{flex:1}}><img src={report.afterImg} alt="" style={{width:"100%",height:130,objectFit:"cover",borderRadius:14}}/><p style={{textAlign:"center",fontSize:9,color:FOREST2,fontWeight:700,margin:"3px 0 0"}}>{t("afterLabel")}</p></div></div>):report.img?(<img src={report.img} alt="" style={{width:"100%",height:150,objectFit:"cover",borderRadius:16}}/>):(<div style={{width:"100%",height:150,borderRadius:16,background:CARD,display:"flex",alignItems:"center",justifyContent:"center"}}><MapPin size={28} color={FOREST}/></div>)}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginTop:12}}><p style={{margin:0,fontWeight:700,fontSize:15.5,color:TEXTDARK,maxWidth:"70%"}}>{noteLabel(report.note,lang)||categoryLabel(report.category,lang)}</p><span style={{fontSize:10.5,fontWeight:700,color:isCleaned?FOREST2:"#9A6B00",background:isCleaned?CARD:"#FFF3D6",padding:"4px 9px",borderRadius:9}}>{isCleaned?t("statusCleaned"):t("statusPending")}</span></div>
@@ -1294,6 +1386,7 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme}){
         </div>
         <div style={{borderTop:`1px solid ${CARD}`,paddingTop:8,fontSize:11.5,color:MUTED}}>Telegram бот: @ecobin_uz_bot</div>
       </div>
+      <button onClick={()=>{try{localStorage.removeItem("ecobin_tour_done");}catch{}onBack();}} style={{width:"100%",marginTop:10,padding:"11px 0",borderRadius:12,border:`1px solid ${FOREST2}`,background:CARD,color:FOREST,fontWeight:700,fontSize:12.5,cursor:"pointer"}}>{t("tourRestart")}</button>
     </div>
   );
 }
