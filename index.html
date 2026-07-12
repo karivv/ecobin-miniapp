@@ -1350,22 +1350,21 @@ function App() {
     <div style={outerWrapStyle} className={animEnabled?"":"no-anim"}>
       <div style={phoneFrameStyle}>
         <div style={screenBoxStyle} data-screen-box="1">
-          {screen!=="splash"&&(
+          {screen!=="splash"&&screen!=="fullmap"&&(
             <div style={{display:"flex",justifyContent:isTelegramApp?"flex-end":"space-between",alignItems:"center",padding:"10px 18px 4px",fontSize:12,color:TEXTDARK,fontWeight:600}}>
               {!isTelegramApp&&<span>9:41</span>}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <button onClick={replayAsNewUser} title={t("replayTooltip")} style={{background:CARD,border:`1px solid ${FOREST2}`,borderRadius:9,height:22,padding:"0 8px",display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><RotateCcw size={11} color={FOREST}/><span style={{fontSize:9,fontWeight:700,color:FOREST,letterSpacing:0.3}}>RESET</span></button>
-                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.1.1</span>
+                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.1.2</span>
               </div>
             </div>
           )}
-          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:screen==="splash"?0:"8px 18px 0",boxSizing:"border-box",width:"100%",maxWidth:"100%"}}>
+          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:(screen==="splash"||screen==="fullmap")?0:"8px 18px 0",boxSizing:"border-box",width:"100%",maxWidth:"100%"}}>
           <div key={screen} style={{animation:animName==="none"?"none":`${animName} 0.28s cubic-bezier(0.22,0.61,0.36,1) both`,height:"100%"}}>
             {screen==="splash"&&<SplashScreen exiting={splashExiting}/>}
             {screen==="language-select"&&<LanguageSelectScreen onSelect={(code)=>{setLanguage(code);setScreen("onboarding");}}/>}
             {screen==="onboarding"&&<OnboardingScreen onDone={finishOnboarding}/>}
             {screen==="home"&&<HomeScreen points={points} reports={reports} onSelectPin={setSelectedId} pendingCount={pendingQueue.length} isOnline={isOnline} binFills={binFills} binDevices={binDevices} onSelectBin={setSelectedBinId} onOpenDashboard={()=>setScreen("dashboard")} myLocation={myLocation} onOpenFullMap={()=>setScreen("fullmap")} theme={theme}/>}
-            {screen==="fullmap"&&<FullMapScreen reports={reports} bins={BIN_LOCATIONS} binFills={binFills} binDevices={binDevices} myLocation={myLocation} onSelectPin={(id)=>{setSelectedId(id);}} onSelectBin={(id)=>{setSelectedBinId(id);}} onBack={()=>setScreen("home")} lang={language} theme={theme}/>}
             {screen==="profile"&&<ProfileScreen points={points} reports={reports} onReset={resetDemo} onExport={exportReportsCSV} onFillDemo={fillDemo} demoFilled={demoFilled}/>}
             {screen==="settings"&&<SettingsScreen onBack={()=>setScreen("home")} language={language} onSetLanguage={setLanguage} theme={theme} onSetTheme={setTheme} onOpenQR={()=>setScreen("qrscan")}/>}
             {screen==="leaderboard"&&<LeaderboardScreen reports={reports} points={points} theme={theme}/>}
@@ -1387,6 +1386,7 @@ function App() {
           </div>
           <input ref={cameraInputRef} type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
           <input ref={afterInputRef} type="file" accept="image/*" onChange={handleAfterFile} style={{display:"none"}}/>
+          {screen==="fullmap"&&<FullMapScreen reports={reports} bins={BIN_LOCATIONS} binFills={binFills} binDevices={binDevices} myLocation={myLocation} onSelectPin={(id)=>{setSelectedId(id);}} onSelectBin={(id)=>{setSelectedBinId(id);}} onBack={()=>setScreen("home")} lang={language} theme={theme}/>}
           {(screen==="home"||screen==="fullmap")&&selectedId&&<ReportDetailSheet report={reports.find((r)=>r.id===selectedId)} onClose={()=>setSelectedId(null)} onStartCleanup={startCleanupPhoto} onMarkCleanedNoPhoto={(id)=>{markCleaned(id,null);setSelectedId(null);}}/>}
           {(screen==="home"||screen==="fullmap")&&selectedBinId&&<BinDetailSheet bin={BIN_LOCATIONS.find((b)=>b.id===selectedBinId)} fill={binFills[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} device={binDevices[BIN_LOCATIONS.findIndex((b)=>b.id===selectedBinId)]} onClose={()=>setSelectedBinId(null)}/>}
           {screen==="qrscan"&&<QRScanScreen onBack={()=>setScreen("settings")}/>}
@@ -2196,7 +2196,7 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme,onOpenQR
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <div style={{width:38,height:38,borderRadius:10,background:FOREST,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Leaf size={19} color="#FFFFFF"/></div>
-          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.1.1</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>{t("aboutTagline")}</p></div>
+          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.1.2</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>{t("aboutTagline")}</p></div>
         </div>
         <div style={{borderTop:`1px solid ${CARD}`,paddingTop:8,fontSize:11.5,color:MUTED}}>{t("aboutBotLabel")}: @ecobin_uz_bot</div>
       </div>
