@@ -54,7 +54,7 @@ html, body { margin: 0; padding: 0; background: #F6FAF7; overflow: hidden; width
 .tap-fx { transition: transform 0.12s ease, opacity 0.12s ease; }
 .tap-fx:active { transform: scale(0.955); opacity: 0.9; }
 
-.leaflet-control-zoom { margin-top: 58px !important; }
+.leaflet-control-zoom { margin-top: 64px !important; }
 .leaflet-top.leaflet-left { z-index: 900 !important; }
 
 .ecobin-cluster { background: transparent; border: none; }
@@ -1355,7 +1355,7 @@ function App() {
               {!isTelegramApp&&<span>9:41</span>}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <button onClick={replayAsNewUser} title={t("replayTooltip")} style={{background:CARD,border:`1px solid ${FOREST2}`,borderRadius:9,height:22,padding:"0 8px",display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><RotateCcw size={11} color={FOREST}/><span style={{fontSize:9,fontWeight:700,color:FOREST,letterSpacing:0.3}}>RESET</span></button>
-                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.1.0</span>
+                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.1.1</span>
               </div>
             </div>
           )}
@@ -1635,26 +1635,25 @@ function FullMapScreen({reports,bins,binFills,binDevices,myLocation,onSelectPin,
     if(tg&&tg.disableVerticalSwipes){try{tg.disableVerticalSwipes();}catch{}}
     return()=>{if(tg&&tg.enableVerticalSwipes){try{tg.enableVerticalSwipes();}catch{}}};
   },[]);
-  return h("div",{style:{position:"absolute",inset:0,zIndex:20,background:LIGHTBG,display:"flex",flexDirection:"column"}},
-    h("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"12px 16px",background:WHITE,borderBottom:`1px solid ${CARD}`,zIndex:2}},
-      h("button",{onClick:onBack,style:{background:"none",border:"none",cursor:"pointer",padding:4}},h(ChevronLeft,{size:22,color:TEXTDARK})),
-      h("p",{style:{margin:0,fontWeight:700,fontSize:16,color:TEXTDARK}},t("cityMap"))
-    ),
-    h("div",{style:{flex:1,position:"relative"}},
-      h(LeafletMap,{reports,bins,binFills,binDevices,myLocation,onSelectPin,onSelectBin,fullscreen:true,lang,theme,filter,onMapReady:(m)=>{mapInst.current=m;}}),
-      h("div",{style:{position:"absolute",top:10,left:0,right:0,zIndex:1000,display:"flex",gap:7,padding:"0 12px",overflowX:"auto",WebkitOverflowScrolling:"touch"}},
+  return h("div",{style:{position:"absolute",inset:0,zIndex:20,background:LIGHTBG}},
+    h(LeafletMap,{reports,bins,binFills,binDevices,myLocation,onSelectPin,onSelectBin,fullscreen:true,lang,theme,filter,onMapReady:(m)=>{mapInst.current=m;}}),
+    h("div",{style:{position:"absolute",top:12,left:12,right:12,zIndex:1100,display:"flex",alignItems:"center",gap:8}},
+      h("button",{onClick:()=>{haptic();onBack();},title:t("cityMap"),style:{flexShrink:0,width:40,height:40,borderRadius:20,background:"#FFFFFF",border:"none",boxShadow:"0 3px 12px rgba(0,0,0,0.28)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}},
+        h(ChevronLeft,{size:22,color:TEXTDARK})
+      ),
+      h("div",{style:{flex:1,display:"flex",gap:7,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:2}},
         FILTERS.map((ft)=>{
           const on=filter===ft.k;
-          return h("button",{key:ft.k,onClick:()=>setFilter(ft.k),style:{flexShrink:0,display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:20,border:"none",cursor:"pointer",background:on?ft.color:"rgba(255,255,255,0.96)",color:on?"#FFFFFF":"#16241F",fontWeight:700,fontSize:11.5,boxShadow:"0 2px 10px rgba(0,0,0,0.22)",transition:"all 0.18s"}},
+          return h("button",{key:ft.k,onClick:()=>{haptic();setFilter(ft.k);},style:{flexShrink:0,display:"flex",alignItems:"center",gap:6,padding:"9px 13px",borderRadius:20,border:"none",cursor:"pointer",background:on?ft.color:"rgba(255,255,255,0.96)",color:on?"#FFFFFF":"#16241F",fontWeight:700,fontSize:11.5,boxShadow:"0 2px 10px rgba(0,0,0,0.22)",transition:"all 0.18s"}},
             h("span",{style:{width:7,height:7,borderRadius:4,background:on?"rgba(255,255,255,0.9)":ft.color,display:"inline-block"}}),
             t(ft.labelKey),
             h("span",{style:{fontSize:10,opacity:0.75}},counts[ft.k])
           );
         })
-      ),
-      h("button",{onClick:recenter,title:t("myLocationBtn"),style:{position:"absolute",right:14,bottom:22,zIndex:1000,width:44,height:44,borderRadius:22,background:"#FFFFFF",border:"none",boxShadow:"0 3px 12px rgba(0,0,0,0.28)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}},
-        h(Target,{size:21,color:myLocation?FOREST:MUTED})
       )
+    ),
+    h("button",{onClick:()=>{haptic();recenter();},title:t("myLocationBtn"),style:{position:"absolute",right:14,bottom:22,zIndex:1100,width:46,height:46,borderRadius:23,background:"#FFFFFF",border:"none",boxShadow:"0 3px 12px rgba(0,0,0,0.28)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}},
+      h(Target,{size:21,color:myLocation?FOREST:MUTED})
     )
   );
 }
@@ -2080,7 +2079,7 @@ function RatingPanel({reports}){
       <div key={tab+statMode} style={{display:"flex",flexDirection:"column",gap:10}}>
         {data.map((d,i)=>{
           const p=d.total>0?Math.round((d.completed/d.total)*100):0;
-          const barPct=statMode==="ratio"?p:Math.round((d.completed/maxCompleted)*100);
+          const barPct=p;
           return (
             <div key={d.name} style={{background:d.isYou?CARD:WHITE,border:d.isYou?`1.5px solid ${FOREST2}`:`1px solid ${CARD}`,borderRadius:14,padding:"10px 14px",opacity:0,animation:`ebRowIn 0.42s cubic-bezier(0.22,0.61,0.36,1) ${0.05+i*0.07}s both`}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -2197,7 +2196,7 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme,onOpenQR
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <div style={{width:38,height:38,borderRadius:10,background:FOREST,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Leaf size={19} color="#FFFFFF"/></div>
-          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.1.0</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>{t("aboutTagline")}</p></div>
+          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.1.1</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>{t("aboutTagline")}</p></div>
         </div>
         <div style={{borderTop:`1px solid ${CARD}`,paddingTop:8,fontSize:11.5,color:MUTED}}>{t("aboutBotLabel")}: @ecobin_uz_bot</div>
       </div>
