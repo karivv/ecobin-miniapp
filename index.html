@@ -178,6 +178,9 @@ const TIME_LABELS = {
   "вчера":{ru:"вчера",uz:"kecha",en:"yesterday"},
   "2 дня назад":{ru:"2 дня назад",uz:"2 kun oldin",en:"2 days ago"},
   "3 дня назад":{ru:"3 дня назад",uz:"3 kun oldin",en:"3 days ago"},
+  "4 дня назад":{ru:"4 дня назад",uz:"4 kun oldin",en:"4 days ago"},
+  "5 дней назад":{ru:"5 дней назад",uz:"5 kun oldin",en:"5 days ago"},
+  "6 дней назад":{ru:"6 дней назад",uz:"6 kun oldin",en:"6 days ago"},
 };
 function timeLabel(time,lang){ const e=TIME_LABELS[time]; return (e&&(e[lang]||e.ru))||time; }
 function useT(){ const lang=useContext(LanguageContext); return (key)=>(STRINGS[lang]&&STRINGS[lang][key])||STRINGS.ru[key]||key; }
@@ -310,6 +313,14 @@ const STRINGS = {
     statsEmptyTitle:"Пока нет заявок",statsEmptyDesc:"Отправь первую заявку — здесь появится твоя статистика",
     statsOther:"Другое",statsOfTotal:"из",
     wdMon:"Пн",wdTue:"Вт",wdWed:"Ср",wdThu:"Чт",wdFri:"Пт",wdSat:"Сб",wdSun:"Вс",
+    levelGuardian:"Защитник района",levelKeeper:"Хранитель города",levelLegend:"Легенда EcoBin",
+    levelProgressTo:"До уровня «{lvl}» осталось {n}",levelMax:"Максимальный уровень достигнут 👑",
+    levelNextAt:"следующий на {n}",
+    streakInRow:"подряд",streakDayOne:"день",streakDayFew:"дня",streakDayMany:"дней",
+    streakKeep:"Отправь заявку сегодня, чтобы продлить серию",streakSafe:"Серия продлена сегодня 👍",
+    demoFillBtn:"Наполнить демо-данными",demoFillDesc:"18 заявок для презентации — графики и рейтинг оживут",
+    shareCardBtn:"Поделиться картинкой",sharePreparing:"Готовим картинку…",shareFallback:"Скопировано!",
+    shareCardTag:"Чистый город начинается с тебя",
   },
   uz: {
     appTagline:"Har bir murojaat bilan shahar tozaroq",splashTagline:"Har bir qadam bilan shahar tozaroq",
@@ -438,6 +449,14 @@ const STRINGS = {
     statsEmptyTitle:"Hozircha murojaat yo'q",statsEmptyDesc:"Birinchi murojaatni yuboring — bu yerda statistikangiz paydo bo'ladi",
     statsOther:"Boshqa",statsOfTotal:"dan",
     wdMon:"Du",wdTue:"Se",wdWed:"Ch",wdThu:"Pa",wdFri:"Ju",wdSat:"Sh",wdSun:"Ya",
+    levelGuardian:"Tuman himoyachisi",levelKeeper:"Shahar qo'riqchisi",levelLegend:"EcoBin afsonasi",
+    levelProgressTo:"«{lvl}» darajasiga {n} ball qoldi",levelMax:"Maksimal daraja olindi 👑",
+    levelNextAt:"keyingisi {n} ballda",
+    streakInRow:"ketma-ket",streakDayOne:"kun",streakDayFew:"kun",streakDayMany:"kun",
+    streakKeep:"Seriyani davom ettirish uchun bugun murojaat yuboring",streakSafe:"Seriya bugun davom ettirildi 👍",
+    demoFillBtn:"Demo ma'lumotlar bilan to'ldirish",demoFillDesc:"Taqdimot uchun 18 ta murojaat — grafiklar jonlanadi",
+    shareCardBtn:"Rasm bilan ulashish",sharePreparing:"Rasm tayyorlanmoqda…",shareFallback:"Nusxalandi!",
+    shareCardTag:"Toza shahar sizdan boshlanadi",
   },
   en: {
     appTagline:"A cleaner city with every report",splashTagline:"A cleaner city with every step",
@@ -566,6 +585,14 @@ const STRINGS = {
     statsEmptyTitle:"No reports yet",statsEmptyDesc:"Submit your first report — your stats will appear here",
     statsOther:"Other",statsOfTotal:"of",
     wdMon:"Mon",wdTue:"Tue",wdWed:"Wed",wdThu:"Thu",wdFri:"Fri",wdSat:"Sat",wdSun:"Sun",
+    levelGuardian:"District guardian",levelKeeper:"City keeper",levelLegend:"EcoBin legend",
+    levelProgressTo:"{n} points to «{lvl}»",levelMax:"Maximum level reached 👑",
+    levelNextAt:"next at {n}",
+    streakInRow:"in a row",streakDayOne:"day",streakDayFew:"days",streakDayMany:"days",
+    streakKeep:"Submit a report today to keep the streak alive",streakSafe:"Streak extended today 👍",
+    demoFillBtn:"Fill with demo data",demoFillDesc:"18 reports for your pitch — charts and rating come alive",
+    shareCardBtn:"Share as image",sharePreparing:"Preparing image…",shareFallback:"Copied!",
+    shareCardTag:"A clean city starts with you",
   },
 };
 
@@ -596,7 +623,49 @@ function binStatus(fill,lang){
   if(fill>=50) return {color:AMBER,label:BIN_STATUS_LABELS.filling[lang]||BIN_STATUS_LABELS.filling.ru};
   return {color:FOREST2,label:BIN_STATUS_LABELS.available[lang]||BIN_STATUS_LABELS.available.ru};
 }
-function levelTitle(points){ if(points<50) return "levelNovice"; if(points<150) return "levelActive"; return "levelHero"; }
+const LEVELS=[
+  {min:0,key:"levelNovice"},
+  {min:50,key:"levelActive"},
+  {min:150,key:"levelHero"},
+  {min:300,key:"levelGuardian"},
+  {min:600,key:"levelKeeper"},
+  {min:1000,key:"levelLegend"},
+];
+function levelIndex(points){ let idx=0; for(let i=0;i<LEVELS.length;i++){ if(points>=LEVELS[i].min) idx=i; } return idx; }
+function levelTitle(points){ return LEVELS[levelIndex(points)].key; }
+function levelInfo(points){
+  const i=levelIndex(points);
+  const cur=LEVELS[i], next=LEVELS[i+1]||null;
+  if(!next) return {cur,next:null,pct:100,remaining:0,index:i,total:LEVELS.length};
+  const span=next.min-cur.min;
+  const pct=Math.max(0,Math.min(100,((points-cur.min)/span)*100));
+  return {cur,next,pct,remaining:Math.max(0,next.min-points),index:i,total:LEVELS.length};
+}
+function pluralRu(n,one,few,many){
+  const m10=n%10,m100=n%100;
+  if(m10===1&&m100!==11)return one;
+  if(m10>=2&&m10<=4&&(m100<10||m100>=20))return few;
+  return many;
+}
+function dayKey(ts){ const d=new Date(ts); return d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate(); }
+function computeStreak(reports){
+  const days=new Set();
+  reports.forEach((r)=>{
+    if(r.category==="повтор"||r.category==="предупреждение"||r.category==="та же точка")return;
+    if(r.createdAt)days.add(dayKey(r.createdAt));
+  });
+  if(days.size===0)return {count:0,days};
+  const now=new Date(); now.setHours(12,0,0,0);
+  const today=dayKey(now.getTime());
+  const yesterday=dayKey(now.getTime()-86400000);
+  let start=null;
+  if(days.has(today))start=0; else if(days.has(yesterday))start=1; else return {count:0,days};
+  let count=0;
+  for(let i=start;i<400;i++){
+    if(days.has(dayKey(now.getTime()-i*86400000)))count++; else break;
+  }
+  return {count,days};
+}
 
 function resizeImage(file) {
   return new Promise((resolve,reject) => {
@@ -748,6 +817,175 @@ function computeAchCtx(reports,points){
   const fraudCount=reports.filter((r)=>r.category==="повтор"||r.category==="предупреждение").length;
   return {genuineCount:genuine.length,cleanedCount:genuine.filter((r)=>r.status==="cleaned").length,points,fraudCount,categoryCount:new Set(genuine.map((r)=>r.category)).size,hasMultiAngle:genuine.some((r)=>r.images&&r.images.length>1),hasSevere:genuine.some((r)=>r.severity>=5)};
 }
+
+const DEMO_THUMBS={
+  "пластик":["#3E6FB5","#7FB0E8"],
+  "стекло":["#2E8C80","#66C4B4"],
+  "бумага":["#B8912F","#E2C56A"],
+  "картон":["#9A6B3F","#C99B6A"],
+  "органика":["#5E7F35","#94B45E"],
+  "смешанный":["#5F6E68","#94A49D"],
+  "стройотходы":["#846352","#B58F79"],
+  "листва":["#4E7A32","#8CBB5E"],
+  "электроника":["#6A4E9C","#A184D4"],
+  "мебель":["#8A5A46","#BC8B71"],
+  "алюминий":["#6C7C86","#A6B6C0"],
+};
+function demoThumb(cat,seed){
+  const g=DEMO_THUMBS[cat]||["#5C6B66","#95A5A0"];
+  const s1=18+((seed*13)%22), s2=30+((seed*7)%26), s3=14+((seed*11)%18);
+  const x1=22+((seed*29)%40), x2=70+((seed*17)%40), x3=118+((seed*23)%28);
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">'
+    +'<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+g[0]+'"/><stop offset="1" stop-color="'+g[1]+'"/></linearGradient></defs>'
+    +'<rect width="160" height="160" fill="url(#g)"/>'
+    +'<g fill="rgba(255,255,255,0.16)"><circle cx="'+x1+'" cy="122" r="'+s1+'"/><circle cx="'+x2+'" cy="134" r="'+s2+'"/><circle cx="'+x3+'" cy="118" r="'+s3+'"/></g>'
+    +'<rect y="0" width="160" height="160" fill="rgba(0,0,0,0.10)"/>'
+    +'<rect y="130" width="160" height="30" fill="rgba(10,20,16,0.28)"/></svg>';
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+}
+const DEMO_SEED=[
+  {cat:"пластик",sev:3,st:"cleaned",d:6,note:"Бутылки у остановки",lat:41.3285,lng:69.2650},
+  {cat:"смешанный",sev:4,st:"cleaned",d:6,note:"Мусор у контейнера",lat:41.3190,lng:69.2410},
+  {cat:"листва",sev:2,st:"cleaned",d:5,note:"Листва во дворе",lat:41.2985,lng:69.2870},
+  {cat:"картон",sev:2,st:"cleaned",d:5,note:"Коробки у магазина",lat:41.3410,lng:69.2905},
+  {cat:"пластик",sev:3,st:"cleaned",d:5,note:"Пакеты на газоне",lat:41.3060,lng:69.3120},
+  {cat:"стекло",sev:4,st:"pending",d:4,note:"Битое стекло у школы",lat:41.3350,lng:69.2540},
+  {cat:"органика",sev:3,st:"cleaned",d:4,note:"Отходы у рынка",lat:41.3255,lng:69.2360},
+  {cat:"смешанный",sev:5,st:"pending",d:4,note:"Стихийная свалка",lat:41.2930,lng:69.2600},
+  {cat:"бумага",sev:2,st:"cleaned",d:3,note:"Бумага у подъезда",lat:41.3125,lng:69.3010},
+  {cat:"пластик",sev:4,st:"cleaned",d:3,note:"Пластик у канала",lat:41.3300,lng:69.3210},
+  {cat:"стройотходы",sev:5,st:"pending",d:3,note:"Строймусор у дороги",lat:41.2880,lng:69.2480},
+  {cat:"листва",sev:1,st:"cleaned",d:2,note:"Ветки у сквера",lat:41.3155,lng:69.2755},
+  {cat:"электроника",sev:3,st:"pending",d:2,note:"Старая техника",lat:41.3390,lng:69.3080},
+  {cat:"смешанный",sev:3,st:"cleaned",d:2,note:"Мусор у детской площадки",lat:41.3020,lng:69.2690},
+  {cat:"пластик",sev:2,st:"cleaned",d:1,note:"Стаканчики у парка",lat:41.3230,lng:69.2830},
+  {cat:"картон",sev:3,st:"pending",d:1,note:"Упаковка у склада",lat:41.2960,lng:69.3010},
+  {cat:"органика",sev:2,st:"pending",d:0,note:"Пищевые отходы",lat:41.3105,lng:69.2905},
+  {cat:"стекло",sev:3,st:"pending",d:0,note:"Бутылки у гаражей",lat:41.3345,lng:69.2690},
+];
+const DEMO_TIME_LABELS=["только что","вчера","2 дня назад","3 дня назад","4 дня назад","5 дней назад","6 дней назад"];
+function buildDemoReports(){
+  const now=Date.now();
+  return DEMO_SEED.map((it,i)=>{
+    const created=now-it.d*86400000-((i*37)%20)*3600000;
+    return {
+      id:"demo-"+i,
+      category:it.cat,
+      severity:it.sev,
+      note:it.note,
+      points:it.sev*10,
+      time:DEMO_TIME_LABELS[it.d]||it.d+" дн.",
+      createdAt:created,
+      img:demoThumb(it.cat,i+3),
+      images:null,
+      fingerprint:null,
+      location:{lat:it.lat,lng:it.lng},
+      status:it.st,
+      cleanedTime:it.st==="cleaned"?DEMO_TIME_LABELS[Math.max(0,it.d-1)]:null,
+      afterImg:null,
+      isDemo:true,
+      pos:{top:(18+((i*13)%64))+"%",left:(12+((i*29)%74))+"%"},
+    };
+  });
+}
+function demoPoints(){ return DEMO_SEED.reduce((a,b)=>a+b.sev*10,0)+40; }
+
+// Отрисовка фирменной карточки для шеринга (1080x1080)
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function loadImg(src){
+  return new Promise((res,rej)=>{
+    const im=new window.Image();
+    im.crossOrigin="anonymous";
+    im.onload=()=>res(im); im.onerror=rej; im.src=src;
+  });
+}
+async function buildShareCard({imgSrc,pts,categoryText,levelText,districtText,tagline}){
+  const S=1080;
+  const cv=document.createElement("canvas"); cv.width=S; cv.height=S;
+  const ctx=cv.getContext("2d");
+
+  // фон
+  ctx.fillStyle="#0C1A14"; ctx.fillRect(0,0,S,S);
+
+  // фото (cover)
+  if(imgSrc){
+    try{
+      const im=await loadImg(imgSrc);
+      const ir=im.width/im.height;
+      let dw=S,dh=S,dx=0,dy=0;
+      if(ir>1){ dh=S; dw=S*ir; dx=(S-dw)/2; } else { dw=S; dh=S/ir; dy=(S-dh)/2; }
+      ctx.drawImage(im,dx,dy,dw,dh);
+    }catch(e){}
+  }
+
+  // затемнение + лесной градиент снизу
+  const gTop=ctx.createLinearGradient(0,0,0,S*0.42);
+  gTop.addColorStop(0,"rgba(12,26,20,0.72)"); gTop.addColorStop(1,"rgba(12,26,20,0)");
+  ctx.fillStyle=gTop; ctx.fillRect(0,0,S,S*0.42);
+  const gBot=ctx.createLinearGradient(0,S*0.34,0,S);
+  gBot.addColorStop(0,"rgba(12,26,20,0)"); gBot.addColorStop(0.48,"rgba(15,32,24,0.86)"); gBot.addColorStop(1,"rgba(10,22,17,0.985)");
+  ctx.fillStyle=gBot; ctx.fillRect(0,S*0.34,S,S*0.66);
+
+  // диагональные фирменные полосы (тонкий паттерн)
+  ctx.save(); ctx.globalAlpha=0.05; ctx.strokeStyle="#FFB703"; ctx.lineWidth=3;
+  for(let i=-S;i<S*2;i+=44){ ctx.beginPath(); ctx.moveTo(i,S); ctx.lineTo(i+S*0.5,0); ctx.stroke(); }
+  ctx.restore();
+
+  // рамка
+  ctx.strokeStyle="rgba(255,183,3,0.30)"; ctx.lineWidth=4;
+  roundRect(ctx,22,22,S-44,S-44,34); ctx.stroke();
+
+  // логотип
+  ctx.fillStyle="#2D6A4F"; roundRect(ctx,58,58,74,74,22); ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,0.9)"; ctx.lineWidth=6; ctx.lineCap="round"; ctx.lineJoin="round";
+  ctx.beginPath(); ctx.moveTo(76,116); ctx.bezierCurveTo(76,80,96,72,116,72);
+  ctx.lineTo(116,78); ctx.bezierCurveTo(116,104,100,116,76,116); ctx.closePath(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(78,116); ctx.lineTo(112,78); ctx.stroke();
+  ctx.fillStyle="#FFFFFF"; ctx.font="700 44px Georgia, serif"; ctx.textBaseline="middle";
+  ctx.fillText("EcoBin",150,96);
+
+  // плашка категории справа сверху
+  if(categoryText){
+    ctx.font="700 26px -apple-system, Segoe UI, Roboto, sans-serif";
+    const tw=ctx.measureText(categoryText).width;
+    const bw=tw+52, bx=S-58-bw;
+    ctx.fillStyle="rgba(255,255,255,0.16)"; roundRect(ctx,bx,68,bw,54,27); ctx.fill();
+    ctx.strokeStyle="rgba(255,255,255,0.22)"; ctx.lineWidth=2; roundRect(ctx,bx,68,bw,54,27); ctx.stroke();
+    ctx.fillStyle="#FFFFFF"; ctx.fillText(categoryText,bx+26,96);
+  }
+
+  // янтарная акцент-полоса у баллов
+  ctx.fillStyle="#FFB703"; roundRect(ctx,58,S-330,8,150,4); ctx.fill();
+
+  // баллы
+  ctx.textBaseline="alphabetic";
+  ctx.fillStyle="#FFB703"; ctx.font="700 148px Georgia, serif";
+  ctx.fillText("+"+pts,90,S-232);
+  ctx.fillStyle="#CFE8DA"; ctx.font="600 34px -apple-system, Segoe UI, Roboto, sans-serif";
+  ctx.fillText(tagline||"",90,S-186);
+
+  // разделитель
+  ctx.strokeStyle="rgba(255,255,255,0.16)"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(58,S-146); ctx.lineTo(S-58,S-146); ctx.stroke();
+
+  // футер
+  ctx.fillStyle="rgba(207,232,218,0.85)"; ctx.font="600 28px -apple-system, Segoe UI, Roboto, sans-serif";
+  ctx.fillText("@ecobin_uz_bot",58,S-96);
+  const right=[levelText,districtText].filter(Boolean).join("  ·  ");
+  if(right){
+    ctx.textAlign="right"; ctx.fillStyle="rgba(207,232,218,0.6)";
+    ctx.fillText(right,S-58,S-96);
+    ctx.textAlign="left";
+  }
+  return cv;
+}
+
 const primaryBtnStyle={width:"100%",marginTop:14,padding:"13px 0",borderRadius:14,border:"none",background:AMBER,color:FOREST,fontWeight:700,fontSize:14,cursor:"pointer"};
 const secondaryBtnStyle={width:"100%",marginTop:8,padding:"12px 0",borderRadius:14,border:`1px solid ${TRACK}`,background:"transparent",color:MUTED,fontWeight:600,fontSize:13,cursor:"pointer"};
 const navBtnStyle={display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer"};
@@ -780,6 +1018,7 @@ function App() {
   const [debugSim,setDebugSim]=useState(null);
   const [splashExiting,setSplashExiting]=useState(false);
   const [showTour,setShowTour]=useState(false);
+  const [demoFilled,setDemoFilled]=useState(false);
   const prevScreenRef=useRef("splash");
   const TAB_ORDER=["home","leaderboard","profile","settings"];
   const prev=prevScreenRef.current;
@@ -832,6 +1071,7 @@ function App() {
       try{const l=await window.storage.get("ecobin_language",false);if(l&&l.value)setLanguage(l.value);}catch{}
       try{const th=await window.storage.get("ecobin_theme",false);if(th&&th.value)setTheme(th.value);}catch{}
       try{const fs=await window.storage.get("ecobin_font_scale",false);if(fs&&fs.value)setFontScale(parseFloat(fs.value));}catch{}
+      try{const df=await window.storage.get("ecobin_demo_filled",false);if(df&&df.value==="1")setDemoFilled(true);}catch{}
       setLoaded(true);
     })();
   },[]);
@@ -866,8 +1106,19 @@ function App() {
     document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   }
 
+  async function fillDemo(){
+    const demo=buildDemoReports();
+    setReports(demo);
+    setPoints(demoPoints());
+    setDemoFilled(true);
+    setSelectedId(null);setSelectedBinId(null);
+    try{await window.storage.set("ecobin_demo_filled","1",false);}catch{}
+    if(navigator.vibrate){try{navigator.vibrate(30);}catch{}}
+  }
+
   async function resetDemo(){
-    setPoints(40);setReports(SEED_REPORTS);setSelectedId(null);setSelectedBinId(null);
+    setPoints(40);setReports(SEED_REPORTS);setSelectedId(null);setSelectedBinId(null);setDemoFilled(false);
+    try{await window.storage.delete("ecobin_demo_filled",false);}catch{}
     setBinFills(BIN_LOCATIONS.map(()=>Math.floor(Math.random()*101)));
     setBinDevices(BIN_LOCATIONS.map(()=>({battery:55+Math.floor(Math.random()*45),lastSignalMin:1+Math.floor(Math.random()*14),online:Math.random()>0.12})));
     try{await window.storage.set("ecobin_points",JSON.stringify(40),false);}catch{}
@@ -995,7 +1246,7 @@ function App() {
       let badge=false;
       const hasEverSubmitted=reportsRef.current.some((r)=>typeof r.id==="string"&&r.id.startsWith("r-"));
       if(!hasEverSubmitted){try{const flag=await window.storage.get("ecobin_first_badge_given",false).catch(()=>null);if(!flag){badge=true;await window.storage.set("ecobin_first_badge_given","1",false).catch(()=>{});}}catch{badge=true;}}
-      const newReport={id:"r-"+idCounter.current,category:parsed.category||"мусор",severity:parsed.severity||3,note:parsed.note||"",points:pts,time:"только что",img:primary.dataUrl,images:photosArray.map((p)=>p.dataUrl),fingerprint:primary.fingerprint,location:location||null,status:"pending",pos:{top:30+Math.random()*40+"%",left:20+Math.random()*55+"%"}};
+      const newReport={id:"r-"+idCounter.current,category:parsed.category||"мусор",severity:parsed.severity||3,note:parsed.note||"",points:pts,time:"только что",createdAt:Date.now(),img:primary.dataUrl,images:photosArray.map((p)=>p.dataUrl),fingerprint:primary.fingerprint,location:location||null,status:"pending",pos:{top:30+Math.random()*40+"%",left:20+Math.random()*55+"%"}};
       setReports((prev)=>[newReport,...prev].slice(0,15));
       setPoints((prev)=>prev+pts);
       return {kind:"trash",analysis:parsed,points:pts,badge,debugSim:dupIndex||null,report:newReport};
@@ -1048,7 +1299,7 @@ function App() {
             <div style={{display:"flex",justifyContent:isTelegramApp?"flex-end":"space-between",alignItems:"center",padding:"10px 18px 4px",fontSize:12,color:TEXTDARK,fontWeight:600}}>
               {!isTelegramApp&&<span>9:41</span>}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <button onClick={replayAsNewUser} title={t("replayTooltip")} style={{background:CARD,border:"none",borderRadius:8,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><RotateCcw size={11} color={FOREST}/></button>
+                <button onClick={replayAsNewUser} title={t("replayTooltip")} style={{background:CARD,border:`1px solid ${FOREST2}`,borderRadius:9,height:22,padding:"0 8px",display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><RotateCcw size={11} color={FOREST}/><span style={{fontSize:9,fontWeight:700,color:FOREST,letterSpacing:0.3}}>RESET</span></button>
                 <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.0.0</span>
               </div>
             </div>
@@ -1060,16 +1311,16 @@ function App() {
             {screen==="onboarding"&&<OnboardingScreen onDone={finishOnboarding}/>}
             {screen==="home"&&<HomeScreen points={points} reports={reports} onSelectPin={setSelectedId} pendingCount={pendingQueue.length} isOnline={isOnline} binFills={binFills} binDevices={binDevices} onSelectBin={setSelectedBinId} onOpenDashboard={()=>setScreen("dashboard")} myLocation={myLocation} onOpenFullMap={()=>setScreen("fullmap")} theme={theme}/>}
             {screen==="fullmap"&&<FullMapScreen reports={reports} bins={BIN_LOCATIONS} binFills={binFills} binDevices={binDevices} myLocation={myLocation} onSelectPin={(id)=>{setSelectedId(id);}} onSelectBin={(id)=>{setSelectedBinId(id);}} onBack={()=>setScreen("home")} lang={language} theme={theme}/>}
-            {screen==="profile"&&<ProfileScreen points={points} reports={reports} onReset={resetDemo} onExport={exportReportsCSV}/>}
+            {screen==="profile"&&<ProfileScreen points={points} reports={reports} onReset={resetDemo} onExport={exportReportsCSV} onFillDemo={fillDemo} demoFilled={demoFilled}/>}
             {screen==="settings"&&<SettingsScreen onBack={()=>setScreen("home")} language={language} onSetLanguage={setLanguage} theme={theme} onSetTheme={setTheme} onOpenQR={()=>setScreen("qrscan")}/>}
             {screen==="leaderboard"&&<LeaderboardScreen reports={reports} points={points} theme={theme}/>}
             {screen==="dashboard"&&<DashboardScreen reports={reports} binFills={binFills} binDevices={binDevices} onBack={()=>setScreen("home")}/>}
             {screen==="capture"&&<CaptureScreen photos={photos} onBack={()=>setScreen("home")} onPickCamera={()=>cameraInputRef.current&&cameraInputRef.current.click()} onRemove={removePhoto} onSubmit={submitForAnalysis} errorMsg={errorMsg} maxPhotos={MAX_PHOTOS_PER_REPORT}/>}
             {screen==="analyzing"&&<AnalyzingScreen photos={photos}/>}
             {screen==="queued"&&<QueuedScreen onDone={()=>setScreen("home")}/>}
-            {screen==="result"&&<ResultScreen analysis={analysis} photos={photos} badgeUnlocked={badgeUnlocked} newAchievements={newAchievements} debugSim={debugSim} onDone={()=>setScreen("home")}/>}
+            {screen==="result"&&<ResultScreen analysis={analysis} photos={photos} badgeUnlocked={badgeUnlocked} newAchievements={newAchievements} debugSim={debugSim} points={points} onDone={()=>setScreen("home")}/>}
             {screen==="rejected"&&<RejectedScreen analysis={analysis} debugSim={debugSim} onRetry={openCapture} onCancel={()=>setScreen("home")}/>}
-            {screen==="manualConfirm"&&<ManualConfirmScreen photos={photos} category={manualCategory} onSetCategory={setManualCategory} onConfirm={()=>{const pts=20;const newReport={id:Date.now().toString(),img:photos[0]?.dataUrl||null,images:photos.map((p)=>p.dataUrl),category:manualCategory,note:null,severity:2,points:pts,time:new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"}),status:"pending",location:batchLocation,pos:{top:`${30+Math.random()*40}%`,left:`${20+Math.random()*60}%`}};setReports((prev)=>[newReport,...prev]);setPoints((p)=>p+pts);setAnalysis({category:manualCategory,severity:2,note:null});setBadgeUnlocked(false);setNewAchievements([]);setScreen("result");}} onCancel={()=>setScreen("home")}/>}
+            {screen==="manualConfirm"&&<ManualConfirmScreen photos={photos} category={manualCategory} onSetCategory={setManualCategory} onConfirm={()=>{const pts=20;const newReport={id:Date.now().toString(),img:photos[0]?.dataUrl||null,images:photos.map((p)=>p.dataUrl),category:manualCategory,note:null,severity:2,points:pts,time:"только что",createdAt:Date.now(),status:"pending",location:batchLocation,pos:{top:`${30+Math.random()*40}%`,left:`${20+Math.random()*60}%`}};setReports((prev)=>[newReport,...prev]);setPoints((p)=>p+pts);setAnalysis({category:manualCategory,severity:2,note:null});setBadgeUnlocked(false);setNewAchievements([]);setScreen("result");}} onCancel={()=>setScreen("home")}/>}
             {screen==="duplicate"&&<DuplicateScreen info={dupInfo} onDone={()=>setScreen("home")}/>}
             {screen==="samespot"&&<SameSpotScreen info={sameSpotInfo} onDone={()=>setScreen("home")}/>}
             {screen==="error"&&<ErrorScreen msg={errorMsg} onRetry={submitForAnalysis} onNewPhoto={openCapture} onCancel={()=>setScreen("home")}/>}
@@ -1346,6 +1597,7 @@ function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,b
         <div><p style={{margin:0,fontWeight:700,fontSize:16,color:TEXTDARK,fontFamily:"Georgia, serif"}}>EcoBin</p><p style={{margin:0,fontSize:12,color:MUTED}}>{t("appTagline")}</p></div>
       </div>
       {(!isOnline||pendingCount>0)&&<div style={{marginTop:12,background:CARD,border:`1px solid ${AMBER}`,borderRadius:12,padding:"8px 12px",fontSize:11.5,color:TEXTDARK}}>{!isOnline?t("offlineBanner"):`${t("sendingQueued")} (${pendingCount})`}</div>}
+      <StreakCard reports={reports}/>
       {nearby.length>0&&(
         <div style={{marginTop:12}}>
           <p style={{fontSize:12.5,fontWeight:700,color:TEXTDARK,margin:"0 0 6px",display:"flex",alignItems:"center",gap:5}}><MapPin size={13} color={AMBER}/>{t("nearbyTitle")}</p>
@@ -1378,7 +1630,7 @@ function HomeScreen({points,reports,onSelectPin,pendingCount,isOnline,binFills,b
         <span style={{display:"flex",alignItems:"center",gap:5,fontSize:10.5,color:MUTED}}><Trash2 size={10} color={RED}/>{t("legendBin")}</span>
       </div>
       <p style={{fontSize:13,fontWeight:700,color:TEXTDARK,margin:"16px 0 8px"}}>{t("recentReports")}</p>
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>{reports.map((r)=>(<ReportRow key={r.id} report={r}/>))}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>{reports.slice(0,6).map((r)=>(<ReportRow key={r.id} report={r}/>))}</div>
       <button data-tour="dashboard" onClick={onOpenDashboard} style={{width:"100%",marginTop:16,padding:"12px 14px",borderRadius:14,border:"none",background:FOREST,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
         <div style={{width:32,height:32,borderRadius:9,background:FOREST2,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><BarChart3 size={16} color="#FFFFFF"/></div>
         <div style={{textAlign:"left",flex:1}}><p style={{margin:0,fontSize:12.5,fontWeight:700,color:"#FFFFFF"}}>{t("cityDashboard")}</p><p style={{margin:0,fontSize:10.5,color:"#CFE8DA"}}>{t("dashboardSubtitle")}</p></div>
@@ -1798,11 +2050,79 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme,onOpenQR
     </div>
   );
 }
-function ProfileScreen({points,reports,onReset,onExport}){
+
+function StreakCard({reports}){
+  const t=useT();const lang=useLang();
+  const {count,days}=computeStreak(reports);
+  const [on,setOn]=useState(false);
+  useEffect(()=>{const tm=setTimeout(()=>setOn(true),120);return()=>clearTimeout(tm);},[]);
+  if(count<2)return null;
+  const WD=[t("wdSun"),t("wdMon"),t("wdTue"),t("wdWed"),t("wdThu"),t("wdFri"),t("wdSat")];
+  const now=new Date(); now.setHours(12,0,0,0);
+  const cells=[];
+  for(let i=6;i>=0;i--){
+    const ts=now.getTime()-i*86400000;
+    cells.push({label:WD[new Date(ts).getDay()],active:days.has(dayKey(ts)),isToday:i===0});
+  }
+  const todayDone=days.has(dayKey(now.getTime()));
+  let word;
+  if(lang==="ru")word=pluralRu(count,t("streakDayOne"),t("streakDayFew"),t("streakDayMany"))+" "+t("streakInRow");
+  else if(lang==="uz")word=t("streakDayOne")+" "+t("streakInRow");
+  else word=(count===1?t("streakDayOne"):t("streakDayMany"))+" "+t("streakInRow");
+  return (
+    <div style={{marginTop:12,display:"flex",alignItems:"center",gap:11,background:CARD,border:`1px solid ${AMBER}`,borderRadius:14,padding:"10px 12px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.05s both"}}>
+      <span style={{fontSize:24,lineHeight:1,animation:"stFire 1.9s ease-in-out infinite"}}>🔥</span>
+      <div style={{flex:1,minWidth:0}}>
+        <p style={{margin:0,fontSize:12.5,fontWeight:700,color:TEXTDARK}}>{count} {word}</p>
+        <div style={{display:"flex",gap:4,marginTop:6}}>
+          {cells.map((c,i)=>(
+            <span key={i} style={{width:20,height:20,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8.5,fontWeight:700,flexShrink:0,
+              background:c.isToday&&c.active?AMBER:(c.active?FOREST2:TRACK),
+              color:c.isToday&&c.active?FOREST:(c.active?"#FFFFFF":MUTED),
+              transform:on?"scale(1)":"scale(0.6)",opacity:on?1:0,
+              transition:`all 0.35s cubic-bezier(0.34,1.4,0.64,1) ${0.1+i*0.05}s`}}>{c.label}</span>
+          ))}
+        </div>
+        <p style={{margin:"6px 0 0",fontSize:10,color:MUTED}}>{todayDone?t("streakSafe"):t("streakKeep")}</p>
+      </div>
+      <style>{`@keyframes stFire{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}`}</style>
+    </div>
+  );
+}
+
+function LevelProgress({points}){
+  const t=useT();
+  const info=levelInfo(points);
+  const [on,setOn]=useState(false);
+  useEffect(()=>{const tm=setTimeout(()=>setOn(true),160);return()=>clearTimeout(tm);},[]);
+  const isMax=!info.next;
+  return (
+    <div style={{marginTop:14,background:CARD,borderRadius:16,padding:"12px 14px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.08s both"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:7}}>
+        <span style={{fontSize:12,fontWeight:700,color:FOREST}}>{t(info.cur.key)}</span>
+        {!isMax&&<span style={{fontSize:10.5,color:MUTED,fontWeight:600}}>{t(info.next.key)} · {info.next.min}</span>}
+      </div>
+      <div style={{height:9,borderRadius:5,background:TRACK,overflow:"hidden"}}>
+        <div style={{width:on?`${isMax?100:info.pct}%`:"0%",height:"100%",borderRadius:5,background:`linear-gradient(90deg, ${FOREST2}, ${AMBER})`,transition:"width 1.1s cubic-bezier(0.34,1.15,0.64,1) 0.15s"}}/>
+      </div>
+      <p style={{margin:"8px 0 0",fontSize:11,fontWeight:700,color:isMax?AMBER:FOREST,textAlign:"center"}}>
+        {isMax?t("levelMax"):t("levelProgressTo").replace("{lvl}",t(info.next.key)).replace("{n}",info.remaining)}
+      </p>
+      <div style={{display:"flex",gap:4,marginTop:9,justifyContent:"center"}}>
+        {LEVELS.map((l,i)=>(
+          <span key={l.key} style={{width:i===info.index?18:6,height:6,borderRadius:3,background:i<=info.index?FOREST:TRACK,transition:"all 0.3s"}}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfileScreen({points,reports,onReset,onExport,onFillDemo,demoFilled}){
   const t=useT();const achCtx=computeAchCtx(reports,points);
   return (
     <div style={{paddingBottom:12}}>
       <div style={{textAlign:"center",marginTop:4}}><div style={{width:64,height:64,borderRadius:32,background:FOREST,margin:"0 auto 10px",display:"flex",alignItems:"center",justifyContent:"center"}}><User size={30} color="#FFFFFF"/></div><p style={{margin:0,fontSize:36,fontWeight:700,color:TEXTDARK,fontFamily:"Georgia, serif"}}>{points}</p><p style={{margin:"2px 0 0",fontSize:13,color:MUTED}}>{t("points").toLowerCase()} · {t(levelTitle(points))}</p></div>
+      <LevelProgress points={points}/>
       <p style={{fontSize:13,fontWeight:700,color:TEXTDARK,margin:"20px 0 8px"}}>{t("achievementsTitle")}</p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
         {ACHIEVEMENTS.map((a)=>{const unlocked=a.check(achCtx);const Icon=a.icon;const prog=!unlocked&&a.progress?a.progress(achCtx):null;return(<div key={a.id} style={{background:unlocked?CARD:LIGHTBG,border:unlocked?`1px solid ${FOREST2}`:`1px solid ${CARD}`,borderRadius:16,padding:"14px 8px",textAlign:"center",opacity:unlocked?1:0.7}}><div style={{width:46,height:46,borderRadius:23,background:unlocked?FOREST:TRACK,margin:"0 auto 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>{unlocked?<Icon size={22} color="#FFFFFF"/>:<Lock size={19} color={MUTED}/>}</div><p style={{margin:0,fontSize:11,fontWeight:700,color:unlocked?TEXTDARK:MUTED,lineHeight:1.3}}>{t(a.titleKey)}</p><p style={{margin:"3px 0 0",fontSize:9.5,color:MUTED,lineHeight:1.25}}>{t(a.descKey)}</p>{prog&&(<><p style={{margin:"5px 0 2px",fontSize:9,fontWeight:700,color:FOREST2}}>{prog[0]}/{prog[1]}</p><div style={{height:4,borderRadius:2,background:TRACK,overflow:"hidden"}}><div style={{width:`${(prog[0]/prog[1])*100}%`,height:"100%",background:FOREST2}}/></div></>)}</div>);})}
@@ -1811,6 +2131,12 @@ function ProfileScreen({points,reports,onReset,onExport}){
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{reports.map((r)=>(<ReportRow key={r.id} report={r}/>))}</div>
       <p style={{fontSize:10.5,color:MUTED,textAlign:"center",marginTop:18,lineHeight:1.4}}><Coins size={11} color={MUTED} style={{verticalAlign:"-1px",marginRight:3}}/>{points} {t("monetizationTeaser")}</p>
       <button onClick={onExport} style={{width:"100%",marginTop:10,padding:"11px 0",borderRadius:12,border:`1px solid ${FOREST2}`,background:CARD,color:FOREST,fontWeight:700,fontSize:12.5,cursor:"pointer"}}>{t("exportReports")}</button>
+      {!demoFilled&&(
+        <button onClick={onFillDemo} style={{width:"100%",marginTop:8,padding:"11px 12px",borderRadius:12,border:`1px dashed ${FOREST2}`,background:CARD,cursor:"pointer",textAlign:"left"}}>
+          <p style={{margin:0,fontSize:12.5,fontWeight:700,color:FOREST}}>🎬 {t("demoFillBtn")}</p>
+          <p style={{margin:"2px 0 0",fontSize:10.5,color:MUTED,fontWeight:500}}>{t("demoFillDesc")}</p>
+        </button>
+      )}
       <button onClick={onReset} style={{width:"100%",marginTop:8,padding:"10px 0",borderRadius:12,border:`1px dashed ${TRACK}`,background:"transparent",color:MUTED,fontWeight:600,fontSize:12,cursor:"pointer"}}>{t("resetDemo")}</button>
     </div>
   );
@@ -1853,11 +2179,47 @@ function playSuccessTone(){
   try{const ctx=new(window.AudioContext||window.webkitAudioContext)();[523.25,659.25,783.99].forEach((freq,i)=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.type="sine";osc.frequency.value=freq;const start=ctx.currentTime+i*0.09;gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(0.15,start+0.02);gain.gain.exponentialRampToValueAtTime(0.001,start+0.25);osc.connect(gain);gain.connect(ctx.destination);osc.start(start);osc.stop(start+0.26);});setTimeout(()=>ctx.close(),600);}catch{}
   if(navigator.vibrate){try{navigator.vibrate([40,30,60]);}catch{}}
 }
-function ResultScreen({analysis,photos,badgeUnlocked,newAchievements,debugSim,onDone}){
+const DISTRICT_KEY_MAP_SHARE={"mirzo-ulugbek":"districtMirzoUlugbek","mirobod":"districtMirobod","yunusobod":"districtYunusobod","chilonzor":"districtChilonzor","yakkasaray":"districtYakkasaray","bektemir":"districtBektemir","sergeli":"districtSergeli","shaykhantakhur":"districtShaykhantakhur","uchtepa":"districtUchtepa","almazor":"districtAlmazor","yashnobod":"districtYashnobod"};
+function ResultScreen({analysis,photos,badgeUnlocked,newAchievements,debugSim,points,onDone}){
   const t=useT();const lang=useLang();const [copied,setCopied]=useState(false);const [showDebug,setShowDebug]=useState(false);
+  const [sharing,setSharing]=useState(false);
   useEffect(()=>{try{if(localStorage.getItem("ecobin_notif_sound")!=="false")playSuccessTone();}catch{}},[]);
   const pts=analysis?(analysis.severity||3)*10:30;const shareMsg=t("shareText").replace("{pts}",pts);
-  function handleShare(){if(navigator.share){navigator.share({text:shareMsg}).catch(()=>{});}else{navigator.clipboard.writeText(shareMsg).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000)}).catch(()=>{});}}
+
+  async function handleShare(){
+    if(sharing)return;
+    setSharing(true);
+    let districtText="";
+    try{
+      const code=localStorage.getItem("ecobin_district")||"mirzo-ulugbek";
+      districtText=t(DISTRICT_KEY_MAP_SHARE[code]||"districtMirzoUlugbek");
+    }catch{}
+    const catText=analysis?categoryLabel(analysis.category||"мусор",lang)+(analysis.severity?" · "+analysis.severity+"/5":""):"";
+    try{
+      const cv=await buildShareCard({
+        imgSrc:photos&&photos[0]?photos[0].dataUrl:null,
+        pts,
+        categoryText:catText,
+        levelText:t(levelTitle(points||0)),
+        districtText,
+        tagline:t("shareCardTag"),
+      });
+      const blob=await new Promise((res,rej)=>cv.toBlob((b)=>b?res(b):rej(new Error("no blob")),"image/png",0.92));
+      const file=new File([blob],"ecobin.png",{type:"image/png"});
+      if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
+        await navigator.share({files:[file],text:shareMsg});
+      }else{
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");a.href=url;a.download="ecobin.png";
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
+        setTimeout(()=>URL.revokeObjectURL(url),3000);
+      }
+    }catch(err){
+      if(navigator.share){try{await navigator.share({text:shareMsg});}catch{}}
+      else{try{await navigator.clipboard.writeText(shareMsg);setCopied(true);setTimeout(()=>setCopied(false),2000);}catch{}}
+    }
+    setSharing(false);
+  }
   return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 0 12px",gap:10}}>
       {photos&&photos[0]&&<img src={photos[0].dataUrl} alt="" style={{width:"100%",height:170,objectFit:"cover",borderRadius:16}}/>}
@@ -1868,7 +2230,7 @@ function ResultScreen({analysis,photos,badgeUnlocked,newAchievements,debugSim,on
       {analysis&&analysis.note&&<p style={{margin:0,fontSize:12,color:MUTED,textAlign:"center",maxWidth:"90%"}}>{analysis.note}</p>}
       {badgeUnlocked&&(<div style={{display:"flex",alignItems:"center",gap:10,background:CARD,borderRadius:16,padding:"10px 14px",width:"100%",boxSizing:"border-box"}}><Award size={24} color={AMBER}/><div><p style={{margin:0,fontSize:12.5,fontWeight:700,color:TEXTDARK}}>{t("achFirstReportTitle")}</p><p style={{margin:0,fontSize:11,color:MUTED}}>{t("achFirstReportDesc")}</p></div></div>)}
       {newAchievements&&newAchievements.length>0&&newAchievements.map((a)=>{const Icon=a.icon;return(<div key={a.id} style={{display:"flex",alignItems:"center",gap:10,background:CARD,borderRadius:16,padding:"10px 14px",width:"100%",boxSizing:"border-box"}}><div style={{width:36,height:36,borderRadius:18,background:FOREST,display:"flex",alignItems:"center",justifyContent:"center"}}><Icon size={18} color="#FFFFFF"/></div><div><p style={{margin:0,fontSize:11,color:AMBER,fontWeight:700}}>{t("newAchievementUnlocked")} 🏆</p><p style={{margin:0,fontSize:12.5,fontWeight:700,color:TEXTDARK}}>{t(a.titleKey)}</p><p style={{margin:0,fontSize:11,color:MUTED}}>{t(a.descKey)}</p></div></div>);})}
-      <button onClick={handleShare} style={{...primaryBtnStyle,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={15} color={FOREST}/><span>{copied?t("copied"):t("share")}</span></button>
+      <button onClick={handleShare} disabled={sharing} style={{...primaryBtnStyle,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:sharing?0.65:1}}><Share2 size={15} color={FOREST}/><span>{sharing?t("sharePreparing"):(copied?t("copied"):t("shareCardBtn"))}</span></button>
       <button onClick={onDone} style={secondaryBtnStyle}>{t("done")}</button>
       {debugSim!==null&&debugSim!==undefined&&(<p onClick={()=>setShowDebug((s)=>!s)} style={{fontSize:9,color:MUTED,cursor:"pointer",textAlign:"center",marginTop:2}}>[debug: dup_check={String(debugSim)}]</p>)}
     </div>
