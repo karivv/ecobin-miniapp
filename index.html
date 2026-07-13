@@ -71,6 +71,16 @@ html, body { margin: 0; padding: 0; background: #F6FAF7; overflow: hidden; width
   animation: none !important;
   transition: none !important;
 }
+/* элементы, которые проявлялись анимацией, должны остаться видимыми без неё */
+.no-anim .reveals,
+.no-anim .anim-rise,
+.no-anim .anim-pop,
+.no-anim .anim-float {
+  opacity: 1 !important;
+  transform: none !important;
+}
+/* мерцающий скелетон не должен оставаться полупрозрачным */
+.no-anim .sk-bar { opacity: 0.55 !important; }
 @keyframes ebCardIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes ebRowIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes ebShine { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
@@ -173,16 +183,16 @@ const WHITE = "var(--ecobin-white, #FFFFFF)";
 const TRACK = "var(--ecobin-track, #EAF4EE)";
 
 const SEED_REPORTS = [
-  { id:"seed-1",category:"пластик",severity:3,note:"Мусор у тротуара",points:30,time:"вчера",img:null,status:"pending",pos:{top:"32%",left:"62%"},location:{lat:41.3275,lng:69.2817} },
-  { id:"seed-2",category:"смешанный",severity:4,note:"Переполненный контейнер",points:40,time:"2 дня назад",img:null,status:"cleaned",pos:{top:"58%",left:"28%"},location:{lat:41.3055,lng:69.2585} },
-  { id:"seed-3",category:"листва",severity:2,note:"Куча листвы у дерева",points:20,time:"3 дня назад",img:null,status:"pending",pos:{top:"45%",left:"45%"},location:{lat:41.3145,lng:69.2701} },
+  { id:"seed-1",category:"пластик",severity:3,note:"Мусор на газоне у тротуара",points:30,time:"вчера",img:"photos/seed-1.jpg",status:"pending",pos:{top:"32%",left:"62%"},location:{lat:41.3275,lng:69.2817} },
+  { id:"seed-2",category:"смешанный",severity:4,note:"Мусор рядом с контейнерами",points:40,time:"2 дня назад",img:"photos/seed-2.jpg",status:"cleaned",pos:{top:"58%",left:"28%"},location:{lat:41.3055,lng:69.2585} },
+  { id:"seed-3",category:"листва",severity:2,note:"Спиленные ветки у дороги",points:20,time:"3 дня назад",img:"photos/seed-3.jpg",status:"pending",pos:{top:"45%",left:"45%"},location:{lat:41.3145,lng:69.2701} },
   { id:"seed-4",category:"пластик",severity:4,note:"Пластиковые бутылки у остановки",points:40,time:"3 дня назад",img:null,status:"cleaned",pos:{top:"22%",left:"38%"},location:{lat:41.3358,lng:69.2896} },
-  { id:"seed-5",category:"стекло",severity:3,note:"Разбитое стекло на тротуаре",points:30,time:"4 дня назад",img:null,status:"pending",pos:{top:"66%",left:"55%"},location:{lat:41.2981,lng:69.2693} },
-  { id:"seed-6",category:"бумага",severity:2,note:"Картонные коробки у магазина",points:20,time:"4 дня назад",img:null,status:"cleaned",pos:{top:"38%",left:"72%"},location:{lat:41.3202,lng:69.3018} },
-  { id:"seed-7",category:"смешанный",severity:5,note:"Стихийная свалка во дворе",points:50,time:"5 дней назад",img:null,status:"pending",pos:{top:"52%",left:"18%"},location:{lat:41.3241,lng:69.2352} },
+  { id:"seed-5",category:"смешанный",severity:3,note:"Мусор у деревьев в сквере",points:30,time:"4 дня назад",img:"photos/seed-5.jpg",status:"pending",pos:{top:"66%",left:"55%"},location:{lat:41.2981,lng:69.2693} },
+  { id:"seed-6",category:"бумага",severity:2,note:"Картонные коробки у подъезда",points:20,time:"4 дня назад",img:"photos/seed-6.jpg",status:"cleaned",pos:{top:"38%",left:"72%"},location:{lat:41.3202,lng:69.3018} },
+  { id:"seed-7",category:"смешанный",severity:5,note:"Свалка вдоль дороги",points:50,time:"5 дней назад",img:"photos/seed-7.jpg",status:"pending",pos:{top:"52%",left:"18%"},location:{lat:41.3241,lng:69.2352} },
   { id:"seed-8",category:"пластик",severity:3,note:"Пакеты у детской площадки",points:30,time:"5 дней назад",img:null,status:"cleaned",pos:{top:"28%",left:"48%"},location:{lat:41.3120,lng:69.2790} },
   { id:"seed-9",category:"металл",severity:2,note:"Банки у скамейки в парке",points:20,time:"6 дней назад",img:null,status:"cleaned",pos:{top:"70%",left:"40%"},location:{lat:41.3178,lng:69.2998} },
-  { id:"seed-10",category:"листва",severity:2,note:"Листья и ветки у дороги",points:20,time:"6 дней назад",img:null,status:"cleaned",pos:{top:"44%",left:"30%"},location:{lat:41.3062,lng:69.2478} },
+  { id:"seed-10",category:"листва",severity:2,note:"Листья и ветки вдоль дорожки",points:20,time:"6 дней назад",img:"photos/seed-10.jpg",status:"cleaned",pos:{top:"44%",left:"30%"},location:{lat:41.3062,lng:69.2478} },
   { id:"seed-11",category:"смешанный",severity:4,note:"Мусор у входа в метро",points:40,time:"неделю назад",img:null,status:"cleaned",pos:{top:"60%",left:"66%"},location:{lat:41.3248,lng:69.3352} },
   { id:"seed-12",category:"пластик",severity:3,note:"Бутылки у остановки транспорта",points:30,time:"неделю назад",img:null,status:"pending",pos:{top:"36%",left:"56%"},location:{lat:41.3305,lng:69.2610} },
 ];
@@ -1355,7 +1365,7 @@ function App() {
               {!isTelegramApp&&<span>9:41</span>}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <button onClick={replayAsNewUser} title={t("replayTooltip")} style={{background:CARD,border:`1px solid ${FOREST2}`,borderRadius:9,height:22,padding:"0 8px",display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><RotateCcw size={11} color={FOREST}/><span style={{fontSize:9,fontWeight:700,color:FOREST,letterSpacing:0.3}}>RESET</span></button>
-                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.1.2</span>
+                <span style={{background:AMBER,color:FOREST,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,letterSpacing:0.5}}>MVP · v1.2.1</span>
               </div>
             </div>
           )}
@@ -1412,8 +1422,8 @@ function SplashScreen({exiting}){
   return (
     <div style={{width:"100%",height:"100%",background:`linear-gradient(160deg,${FOREST} 0%,#0c1a14 100%)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden",transformOrigin:"top left",animation:exiting?"splashExit 0.48s cubic-bezier(0.6,0,0.9,0.3) forwards":"none"}}>
       <div style={{width:88,height:88,borderRadius:26,background:FOREST2,display:"flex",alignItems:"center",justifyContent:"center",animation:"splashPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both",boxShadow:"0 10px 30px rgba(0,0,0,0.35)"}}><Leaf size={42} color="#FFFFFF"/></div>
-      <p style={{marginTop:18,fontSize:26,fontWeight:700,color:"#FFFFFF",fontFamily:"Georgia, serif",opacity:0,animation:"splashFadeUp 0.6s ease-out 0.45s both"}}>EcoBin</p>
-      <p style={{marginTop:4,fontSize:12.5,color:"#CFE8DA",opacity:0,animation:"splashFadeUp 0.6s ease-out 0.65s both"}}>{t("splashTagline")}</p>
+      <p className="reveals" style={{marginTop:18,fontSize:26,fontWeight:700,color:"#FFFFFF",fontFamily:"Georgia, serif",opacity:0,animation:"splashFadeUp 0.6s ease-out 0.45s both"}}>EcoBin</p>
+      <p className="reveals" style={{marginTop:4,fontSize:12.5,color:"#CFE8DA",opacity:0,animation:"splashFadeUp 0.6s ease-out 0.65s both"}}>{t("splashTagline")}</p>
       <style>{`@keyframes splashPop{0%{transform:scale(0.4);opacity:0}100%{transform:scale(1);opacity:1}}@keyframes splashFadeUp{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}@keyframes splashExit{0%{transform:scale(1) translate(0,0);opacity:1;border-radius:0}100%{transform:scale(0.15) translate(-60%,-60%);opacity:0;border-radius:40%}}`}</style>
     </div>
   );
@@ -1922,7 +1932,7 @@ function StatMetricCard({label,value,decimals,suffix,sub,delay,accent}){
   const n=useCountUp(value,950);
   const shown=decimals?n.toFixed(decimals):Math.round(n);
   return (
-    <div style={{flex:1,minWidth:0,background:CARD,borderRadius:16,padding:"12px 13px",opacity:0,animation:`ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) ${delay}s both`,overflow:"hidden",position:"relative"}}>
+    <div className="reveals" style={{flex:1,minWidth:0,background:CARD,borderRadius:16,padding:"12px 13px",opacity:0,animation:`ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) ${delay}s both`,overflow:"hidden",position:"relative"}}>
       <p style={{margin:0,fontSize:10.5,color:MUTED,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{label}</p>
       <p style={{margin:"3px 0 0",fontSize:23,fontWeight:700,color:accent||TEXTDARK,fontFamily:"Georgia, serif",lineHeight:1.1}}>{shown}{suffix||""}</p>
       {sub&&<p style={{margin:"2px 0 0",fontSize:10,color:MUTED,fontWeight:600}}>{sub}</p>}
@@ -2003,7 +2013,7 @@ function StatsPanel({reports,points,theme}){
 
   if(total===0){
     return (
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"46px 20px",textAlign:"center",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.05s both"}}>
+      <div className="reveals" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"46px 20px",textAlign:"center",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.05s both"}}>
         <div style={{width:64,height:64,borderRadius:32,background:CARD,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:14}}><PieChart size={28} color={FOREST}/></div>
         <p style={{margin:0,fontSize:15,fontWeight:700,color:TEXTDARK,fontFamily:"Georgia, serif"}}>{t("statsEmptyTitle")}</p>
         <p style={{margin:"6px 0 0",fontSize:12,color:MUTED,lineHeight:1.5,maxWidth:250}}>{t("statsEmptyDesc")}</p>
@@ -2023,11 +2033,11 @@ function StatsPanel({reports,points,theme}){
       </div>
 
       <p style={{fontSize:12.5,fontWeight:700,color:TEXTDARK,margin:"0 0 8px"}}>{t("statsCategoriesTitle")}</p>
-      <div style={{display:"flex",alignItems:"center",gap:14,background:WHITE,border:`1px solid ${CARD}`,borderRadius:16,padding:"14px 14px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.28s both"}}>
+      <div className="reveals" style={{display:"flex",alignItems:"center",gap:14,background:WHITE,border:`1px solid ${CARD}`,borderRadius:16,padding:"14px 14px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.28s both"}}>
         <CategoryDonut segments={segments} total={total} theme={theme}/>
         <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:7}}>
           {rows.map((r,i)=>(
-            <div key={r.key} style={{display:"flex",alignItems:"center",gap:7,opacity:0,animation:`ebRowIn 0.4s ease-out ${0.34+i*0.07}s both`}}>
+            <div key={r.key} className="reveals" style={{display:"flex",alignItems:"center",gap:7,opacity:0,animation:`ebRowIn 0.4s ease-out ${0.34+i*0.07}s both`}}>
               <span style={{width:9,height:9,borderRadius:3,background:r.color,flexShrink:0,display:"inline-block"}}/>
               <span style={{flex:1,fontSize:11.5,color:TEXTDARK,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textTransform:"capitalize"}}>{r.label}</span>
               <span style={{fontSize:11,fontWeight:700,color:MUTED,flexShrink:0}}>{Math.round((r.count/total)*100)}%</span>
@@ -2037,7 +2047,7 @@ function StatsPanel({reports,points,theme}){
       </div>
 
       <p style={{fontSize:12.5,fontWeight:700,color:TEXTDARK,margin:"18px 0 8px"}}>{t("statsWeekTitle")}</p>
-      <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:16,padding:"14px 14px 8px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.36s both"}}>
+      <div className="reveals" style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:16,padding:"14px 14px 8px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.36s both"}}>
         {week.map((w,i)=>(
           <AnimatedBar key={i} label={w.label} value={w.count} pct={Math.max((w.count/maxWeek)*100,3)} color={i===6?AMBER:FOREST2} delay={0.42+i*0.06}/>
         ))}
@@ -2081,7 +2091,7 @@ function RatingPanel({reports}){
           const p=d.total>0?Math.round((d.completed/d.total)*100):0;
           const barPct=p;
           return (
-            <div key={d.name} style={{background:d.isYou?CARD:WHITE,border:d.isYou?`1.5px solid ${FOREST2}`:`1px solid ${CARD}`,borderRadius:14,padding:"10px 14px",opacity:0,animation:`ebRowIn 0.42s cubic-bezier(0.22,0.61,0.36,1) ${0.05+i*0.07}s both`}}>
+            <div className="reveals" key={d.name} style={{background:d.isYou?CARD:WHITE,border:d.isYou?`1.5px solid ${FOREST2}`:`1px solid ${CARD}`,borderRadius:14,padding:"10px 14px",opacity:0,animation:`ebRowIn 0.42s cubic-bezier(0.22,0.61,0.36,1) ${0.05+i*0.07}s both`}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span style={{fontSize:13,fontWeight:700,color:TEXTDARK}}>{medals[i]||`${i+1}.`} {d.name}</span>
                 <span style={{fontSize:13,fontWeight:700,color:FOREST}}>{statMode==="ratio"?`${p}%`:d.completed}</span>
@@ -2196,7 +2206,7 @@ function SettingsScreen({onBack,language,onSetLanguage,theme,onSetTheme,onOpenQR
       <div style={{background:WHITE,border:`1px solid ${CARD}`,borderRadius:12,padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <div style={{width:38,height:38,borderRadius:10,background:FOREST,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Leaf size={19} color="#FFFFFF"/></div>
-          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.1.2</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>{t("aboutTagline")}</p></div>
+          <div><p style={{margin:0,fontSize:13,fontWeight:700,color:TEXTDARK}}>EcoBin v1.2.1</p><p style={{margin:"1px 0 0",fontSize:11,color:MUTED}}>{t("aboutTagline")}</p></div>
         </div>
         <div style={{borderTop:`1px solid ${CARD}`,paddingTop:8,fontSize:11.5,color:MUTED}}>{t("aboutBotLabel")}: @ecobin_uz_bot</div>
       </div>
@@ -2224,7 +2234,7 @@ function StreakCard({reports}){
   else if(lang==="uz")word=t("streakDayOne")+" "+t("streakInRow");
   else word=(count===1?t("streakDayOne"):t("streakDayMany"))+" "+t("streakInRow");
   return (
-    <div style={{marginTop:12,display:"flex",alignItems:"center",gap:11,background:CARD,border:`1px solid ${AMBER}`,borderRadius:14,padding:"10px 12px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.05s both"}}>
+    <div className="reveals" style={{marginTop:12,display:"flex",alignItems:"center",gap:11,background:CARD,border:`1px solid ${AMBER}`,borderRadius:14,padding:"10px 12px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.05s both"}}>
       <span style={{fontSize:24,lineHeight:1,animation:"stFire 1.9s ease-in-out infinite"}}>🔥</span>
       <div style={{flex:1,minWidth:0}}>
         <p style={{margin:0,fontSize:12.5,fontWeight:700,color:TEXTDARK}}>{count} {word}</p>
@@ -2251,7 +2261,7 @@ function LevelProgress({points}){
   useEffect(()=>{const tm=setTimeout(()=>setOn(true),160);return()=>clearTimeout(tm);},[]);
   const isMax=!info.next;
   return (
-    <div style={{marginTop:14,background:CARD,borderRadius:16,padding:"12px 14px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.08s both"}}>
+    <div className="reveals" style={{marginTop:14,background:CARD,borderRadius:16,padding:"12px 14px",opacity:0,animation:"ebCardIn 0.5s cubic-bezier(0.22,0.61,0.36,1) 0.08s both"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:7}}>
         <span style={{fontSize:12,fontWeight:700,color:FOREST}}>{t(info.cur.key)}</span>
         {!isMax&&<span style={{fontSize:10.5,color:MUTED,fontWeight:600}}>{t(info.next.key)} · {info.next.min}</span>}
